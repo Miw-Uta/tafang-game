@@ -1,0 +1,2 @@
+# 本项目为原生 HTML5 Canvas 游戏，无 Python 或 Node.js 第三方依赖。
+# Python 3.10+ 仅用于启动本地静态文件服务器。

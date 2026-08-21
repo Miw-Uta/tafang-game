@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>森林守卫：甜橙谷</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Noto+Sans+SC:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark">🍊</div><div><h1>甜橙谷</h1><span>森林守卫 · 第 03 章</span></div></div>
+      <div class="stats">
+        <div class="stat"><span class="stat-icon">💛</span><b id="lives">12</b><small>生命</small></div>
+        <div class="stat"><span class="stat-icon">💰</span><b id="coins">180</b><small>金币</small></div>
+        <div class="stat"><span class="stat-icon">🌟</span><b id="score">0</b><small>得分</small></div>
+      </div>
+      <button class="sound-btn" id="soundBtn" title="切换音效">🔊</button>
+    </header>
+    <section class="stage-wrap">
+      <div class="stage-head"><div><strong>溪边小径</strong><span id="message">准备好迎接第一波怪物了吗？</span></div><div class="wave-box"><span>WAVE</span><b id="wave">1</b><em>/ 5</em></div></div>
+      <div class="canvas-frame"><canvas id="game" width="960" height="540"></canvas><div class="hint" id="hint">点击草地放置炮塔 · 点击炮塔可升级</div></div>
+      <div class="stage-foot"><div class="progress"><div class="progress-label"><span>波次进度</span><b id="progressText">0 / 8</b></div><div class="progress-track"><i id="progressBar"></i></div></div><button class="wave-btn" id="waveBtn">开始第 1 波 <span>▶</span></button></div>
+    </section>
+    <aside class="tower-panel"><div class="panel-title"><div><span>守护者</span><h2>橡果守卫</h2></div><span class="tip">拖动移动 · 合成升级</span></div><div class="tower-list" id="towerList"></div><div class="selected-info" id="selectedInfo"><span class="info-icon">🌰</span><div><b>拖动橡果塔改变位置</b><small>两个同等级炮塔重叠即可合成</small></div></div><div class="evo-box" id="evoBox"><b>进化树</b><small>每 5 级可选择一次方向</small><div class="evo-actions"><button data-evo="thorns">🌵 荆棘</button><button data-evo="frost">❄️ 冰霜</button><button data-evo="gold">✨ 黄金</button></div></div></aside>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
