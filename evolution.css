@@ -1,0 +1,57 @@
+.evo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(27, 47, 32, 0.72);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+.evo-modal.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.evo-dialog {
+  position: relative;
+  width: min(820px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 30px;
+  background: #fffaf0;
+  border: 2px solid #d5e5cc;
+  border-radius: 20px;
+  box-shadow: 0 28px 90px rgba(18, 39, 24, 0.38);
+  transform: translateY(14px) scale(0.98);
+  transition: transform 200ms ease;
+}
+
+.evo-modal.show .evo-dialog { transform: translateY(0) scale(1); }
+.modal-close { position: absolute; right: 17px; top: 13px; width: 35px; height: 35px; border: 0; border-radius: 50%; background: #edf4e8; color: #64766a; font-size: 25px; line-height: 1; cursor: pointer; }
+.modal-kicker { display: block; color: #d97822; font-size: 10px; font-weight: 900; letter-spacing: 2px; }
+.evo-dialog h2 { margin: 7px 0 5px; font-size: 27px; }
+.evo-dialog > p { margin: 0 0 22px; color: #6d7c72; font-size: 13px; }
+.evo-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.evo-choices button { min-height: 210px; padding: 22px 17px; border: 2px solid #dce8d6; border-radius: 14px; background: #fffdf7; text-align: left; cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.evo-choices button:nth-child(1) { background: #eff8e8; }
+.evo-choices button:nth-child(2) { background: #eaf7f8; }
+.evo-choices button:nth-child(3) { background: #fff5d8; }
+.evo-choices button:hover { transform: translateY(-5px); border-color: #f1a64f; box-shadow: 0 12px 25px rgba(69, 94, 65, 0.14); }
+.evo-choices button:active { transform: translateY(-1px); }
+.evo-choices strong { display: block; margin-bottom: 12px; color: #24352d; font: 900 18px 'Nunito', 'Noto Sans SC', sans-serif; }
+.evo-choices small { display: block; color: #65756b; font: 700 12px/1.7 'Nunito', 'Noto Sans SC', sans-serif; }
+.modal-open { overflow: hidden; }
+
+@media (max-width: 700px) {
+  .evo-dialog { padding: 24px 18px; }
+  .evo-choices { grid-template-columns: 1fr; }
+  .evo-choices button { min-height: 105px; }
+  .evo-dialog h2 { font-size: 22px; }
+}
