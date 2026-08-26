@@ -32,11 +32,16 @@
   transform: translateY(14px) scale(0.98);
   transition: transform 200ms ease;
 }
+.evo-dialog.has-rare { border: 4px solid #f0b52f; box-shadow: 0 0 0 6px rgba(255,215,92,.28), 0 28px 100px rgba(119,65,12,.55); }
+.evo-dialog.has-rare::before { content: ''; position: absolute; inset: -18px; border: 8px solid rgba(255,221,93,.85); border-radius: 26px; pointer-events: none; animation: rareAura .55s ease-in-out infinite alternate; }
+.rare-banner { margin: -30px -30px 20px; padding: 12px; background: #c95720; color: #fff8d6; text-align: center; font: 900 18px 'Nunito','Noto Sans SC',sans-serif; letter-spacing: 0; box-shadow: inset 0 -4px #963411; animation: bannerFlash 700ms ease-in-out infinite alternate; }
+.rare-banner[hidden] { display: none; }
 
 .evo-modal.show .evo-dialog { transform: translateY(0) scale(1); }
 .modal-close { position: absolute; right: 17px; top: 13px; width: 35px; height: 35px; border: 0; border-radius: 50%; background: #edf4e8; color: #64766a; font-size: 25px; line-height: 1; cursor: pointer; }
 .modal-kicker { display: block; color: #d97822; font-size: 10px; font-weight: 900; letter-spacing: 2px; }
 .evo-dialog h2 { margin: 7px 0 5px; font-size: 27px; }
+.evo-dialog h2.rare-alert { color: #b94b1e; text-shadow: 0 2px 0 #ffd982; animation: rarePulse 900ms ease-in-out infinite alternate; }
 .evo-dialog > p { margin: 0 0 22px; color: #6d7c72; font-size: 13px; }
 .evo-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .evo-choices button { min-height: 210px; padding: 22px 17px; border: 2px solid #dce8d6; border-radius: 14px; background: #fffdf7; text-align: left; cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
@@ -44,13 +49,40 @@
 .evo-choices button:nth-child(2) { background: #eaf7f8; }
 .evo-choices button:nth-child(3) { background: #fff5d8; }
 .evo-choices button:hover { transform: translateY(-5px); border-color: #f1a64f; box-shadow: 0 12px 25px rgba(69, 94, 65, 0.14); }
+.evo-choices button.rare-route { position: relative; border-width: 4px; border-color: #e5a32f; box-shadow: 0 0 0 2px #ffd76a inset, 0 8px 22px rgba(218, 137, 35, .2); background: #fff4cf; }
+.evo-choices button.rare-route strong { color: #a94c1f; }
+.evo-choices button.rare-route[data-route-key="yin"] { border-color:#625b9d;background:#eeeaff;animation:yinGlow .75s ease-in-out infinite alternate; }
+.evo-choices button.rare-route[data-route-key="yang"] { border-color:#edaf31;background:#fff2b8;animation:yangGlow .75s ease-in-out infinite alternate; }
+.evo-choices button.rare-route[data-route-key="wind"] { border-color:#4fa7a9;background:#ddf8f5;animation:windGlow .75s ease-in-out infinite alternate; }
+.evo-choices button.rare-route[data-route-key="thunder"] { border-color:#8466cf;background:#e9e0ff;animation:thunderGlow .65s ease-in-out infinite alternate; }
+.rare-badge { display: inline-block; margin-bottom: 10px; padding: 4px 8px; border-radius: 5px; background: #c95720; color: white; font: 900 11px 'Nunito','Noto Sans SC',sans-serif; }
 .evo-choices button:active { transform: translateY(-1px); }
 .evo-choices strong { display: block; margin-bottom: 12px; color: #24352d; font: 900 18px 'Nunito', 'Noto Sans SC', sans-serif; }
 .evo-choices small { display: block; color: #65756b; font: 700 12px/1.7 'Nunito', 'Noto Sans SC', sans-serif; }
 .modal-open { overflow: hidden; }
+@keyframes rarePulse { from { transform: scale(1); } to { transform: scale(1.035); } }
+@keyframes bannerFlash { from { background: #b54418; } to { background: #e06b21; } }
+@keyframes yinGlow { from{box-shadow:0 0 8px #625b9d,0 0 0 2px #b89cff inset}to{box-shadow:0 0 32px 10px #625b9d,0 0 18px #fff inset} }
+@keyframes yangGlow { from{box-shadow:0 0 8px #edaf31,0 0 0 2px #ffd35c inset}to{box-shadow:0 0 34px 12px #ffc533,0 0 20px #fff inset} }
+@keyframes windGlow { from{box-shadow:0 0 8px #62aeb0,0 0 0 2px #8de6df inset}to{box-shadow:0 0 34px 11px #47d6c9,0 0 20px #fff inset} }
+@keyframes thunderGlow { from{box-shadow:0 0 9px #8466cf,0 0 0 2px #c5a8ff inset}to{box-shadow:0 0 38px 13px #8c5cff,0 0 22px #fff inset} }
+@keyframes rareAura { from { opacity: .35; transform: scale(.985); } to { opacity: 1; transform: scale(1.02); } }
+
+.evo-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid #dce8d6; }
+.evo-box > b { display: block; font-size: 13px; }
+.evo-box > small { display: block; margin-top: 3px; color: #6d7c72; font-size: 10px; }
+.fusion-grid { width: 126px; margin: 12px auto 0; display: grid; grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(3, 38px); gap: 6px; }
+.fusion-grid span, .fusion-grid i { width: 38px; height: 38px; }
+.fusion-grid span { display: grid; place-items: center; border: 1px solid #d7dfcf; border-radius: 6px; background: #fffdf7; font: 900 13px 'Noto Sans SC',sans-serif; }
+.fusion-grid span:nth-child(1) { color: #3f8d47; background: #eaf6e6; }
+.fusion-grid span:nth-child(3) { color: #2885ad; background: #e4f4f8; }
+.fusion-grid span:nth-child(5) { color: #a77a22; background: #fff2c8; border-width: 2px; }
+.fusion-grid span:nth-child(7) { color: #ca4e2f; background: #fde9df; }
+.fusion-grid span:nth-child(9) { color: #80603f; background: #eee5d9; }
 
 @media (max-width: 700px) {
   .evo-dialog { padding: 24px 18px; }
+  .rare-banner { margin: -24px -18px 18px; }
   .evo-choices { grid-template-columns: 1fr; }
   .evo-choices button { min-height: 105px; }
   .evo-dialog h2 { font-size: 22px; }

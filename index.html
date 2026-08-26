@@ -25,11 +25,11 @@
     <section class="stage-wrap">
       <div class="stage-head"><div><strong>无尽林地</strong><span id="message">不断合成守卫，完成最终进化即可解锁决胜波。</span></div><div class="wave-box"><span>WAVE</span><b id="wave">1</b><em>/ ∞</em></div></div>
       <div class="canvas-frame"><canvas id="game" width="960" height="540"></canvas><div class="hint" id="hint">拖动到绿色格子 · 道路格禁止放置 · 同级重叠可合成</div></div>
-      <div class="stage-foot"><div class="progress"><div class="progress-label"><span>波次进度</span><b id="progressText">0 / 8</b></div><div class="progress-track"><i id="progressBar"></i></div></div><div class="game-controls"><button class="control-btn" id="pauseBtn" title="暂停游戏">Ⅱ</button><button class="control-btn speed-btn" id="speedBtn" title="切换游戏速度">1×</button></div><button class="wave-btn" id="waveBtn">开始冒险 <span>▶</span></button></div>
+      <div class="stage-foot"><div class="progress"><div class="progress-label"><span>波次进度</span><b id="progressText">0 / 8</b></div><div class="progress-track"><i id="progressBar"></i></div></div><div class="game-controls"><button class="merge-btn" id="mergeBtn" title="合成所有同等级同路线守卫">一键合成</button><button class="control-btn" id="pauseBtn" title="暂停游戏">Ⅱ</button><button class="control-btn speed-btn" id="speedBtn" title="切换游戏速度">1×</button></div><button class="wave-btn" id="waveBtn">开始冒险 <span>▶</span></button></div>
     </section>
-    <aside class="tower-panel"><div class="panel-title"><div><span>守护者</span><h2>橡果守卫</h2></div><span class="tip">最高 Lv.10</span></div><div class="tower-list" id="towerList"></div><div class="selected-info" id="selectedInfo"><span class="info-icon">🌰</span><div><b>拖动橡果塔改变位置</b><small>Lv.5 随机获得三条进化路线</small></div></div><div class="evo-box" id="evoBox"><b>进化树</b><small>五行主路线 · 阴阳风雷稀有路线</small><div class="evo-actions"><button>金</button><button>木</button><button>水</button></div></div></aside>
+    <aside class="tower-panel"><div class="panel-title"><div><span>守护者</span><h2>橡果守卫</h2></div><span class="tip">最高 Lv.10</span></div><div class="tower-list" id="towerList"></div><div class="selected-info" id="selectedInfo"><span class="info-icon">🌰</span><div><b>拖动橡果塔改变位置</b><small>点击塔或敌人查看详细信息</small></div></div></aside>
   </main>
-  <div class="evo-modal" id="evoModal" aria-hidden="true"><div class="evo-dialog"><span class="modal-kicker">EVOLUTION TREE</span><h2 id="evoTitle">选择永久进化分支</h2><p>随机出现三条路线。五行较常见，阴阳风雷为稀有路线；路线一旦选择不可更换。</p><div class="evo-choices" id="evoChoices"></div></div></div>
+  <div class="evo-modal" id="evoModal" aria-hidden="true"><div class="evo-dialog"><div class="rare-banner" id="rareBanner" hidden>稀有路线降临</div><span class="modal-kicker">EVOLUTION TREE</span><h2 id="evoTitle">选择永久进化分支</h2><p>随机出现三条路线。五行较常见，阴阳风雷为稀有路线；路线一旦选择不可更换。</p><div class="evo-choices" id="evoChoices"></div></div></div>
   <script src="game.js"></script>
 </body>
 </html>

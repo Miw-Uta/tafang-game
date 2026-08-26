@@ -2,4 +2,6 @@
 .control-btn { width: 39px; height: 39px; border: 1px solid #dce8d6; border-radius: 10px; background: #fffdf7; color: #526a55; font: 900 13px 'Nunito', 'Noto Sans SC', sans-serif; cursor: pointer; }
 .control-btn:hover { border-color: #f2ad62; background: #fff4df; }
 .speed-btn { width: 45px; }
-@media (max-width: 800px) { .game-controls { gap: 4px; } .control-btn { width: 34px; height: 34px; } .speed-btn { width: 42px; } }
+.merge-btn { height: 39px; padding: 0 12px; border: 1px solid #e6a052; border-radius: 10px; background: #fff4df; color: #b96320; font: 900 12px 'Nunito','Noto Sans SC',sans-serif; cursor: pointer; white-space: nowrap; }
+.merge-btn:hover { background: #ffe7be; border-color: #dd812d; }
+@media (max-width: 800px) { .game-controls { gap: 4px; } .control-btn { width: 34px; height: 34px; } .speed-btn { width: 42px; } .merge-btn { height: 34px; padding: 0 8px; font-size: 11px; } }
