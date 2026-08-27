@@ -44,7 +44,7 @@
 .evo-dialog h2.rare-alert { color: #b94b1e; text-shadow: 0 2px 0 #ffd982; animation: rarePulse 900ms ease-in-out infinite alternate; }
 .evo-dialog > p { margin: 0 0 22px; color: #6d7c72; font-size: 13px; }
 .evo-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.evo-choices button { min-height: 210px; padding: 22px 17px; border: 2px solid #dce8d6; border-radius: 14px; background: #fffdf7; text-align: left; cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.evo-choices button { min-height: 260px; padding: 22px 17px; border: 2px solid #dce8d6; border-radius: 14px; background: #fffdf7; text-align: left; cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
 .evo-choices button:nth-child(1) { background: #eff8e8; }
 .evo-choices button:nth-child(2) { background: #eaf7f8; }
 .evo-choices button:nth-child(3) { background: #fff5d8; }
@@ -59,6 +59,9 @@
 .evo-choices button:active { transform: translateY(-1px); }
 .evo-choices strong { display: block; margin-bottom: 12px; color: #24352d; font: 900 18px 'Nunito', 'Noto Sans SC', sans-serif; }
 .evo-choices small { display: block; color: #65756b; font: 700 12px/1.7 'Nunito', 'Noto Sans SC', sans-serif; }
+.evo-stats, .evo-effect { display: block; margin: 12px 0 0; padding: 8px; border-radius: 6px; font: 800 11px/1.5 'Nunito', 'Noto Sans SC', sans-serif; }
+.evo-stats { background: #edf3e9; color: #344b3d; }
+.evo-effect { margin-top: 6px; background: #fff0cf; color: #8a5720; }
 .modal-open { overflow: hidden; }
 @keyframes rarePulse { from { transform: scale(1); } to { transform: scale(1.035); } }
 @keyframes bannerFlash { from { background: #b54418; } to { background: #e06b21; } }

@@ -4,4 +4,14 @@
 .speed-btn { width: 45px; }
 .merge-btn { height: 39px; padding: 0 12px; border: 1px solid #e6a052; border-radius: 10px; background: #fff4df; color: #b96320; font: 900 12px 'Nunito','Noto Sans SC',sans-serif; cursor: pointer; white-space: nowrap; }
 .merge-btn:hover { background: #ffe7be; border-color: #dd812d; }
+.surge-btn { position: relative; isolation: isolate; min-width: 142px; height: 44px; overflow: hidden; display: flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid #e5b353; border-radius: 8px; background: #302f29; color: #fff4cc; cursor: pointer; text-align: left; }
+.surge-btn > * { position: relative; z-index: 1; }
+.surge-btn i { position: absolute; z-index: 0; inset: 0 auto 0 0; width: 0; background: #c87824; opacity: .68; transition: width 180ms ease; }
+.surge-icon { width: 26px; font-size: 22px; color: #ffcf58; text-align: center; }
+.surge-copy b,.surge-copy small { display: block; white-space: nowrap; }
+.surge-copy b { font: 900 11px 'Nunito','Noto Sans SC',sans-serif; }
+.surge-copy small { margin-top: 2px; font: 800 8px 'Nunito','Noto Sans SC',sans-serif; color: #e0d6af; }
+.surge-btn:disabled { cursor: not-allowed; opacity: .76; }
+.surge-btn.ready { border-color: #ffd76b; box-shadow: 0 0 0 2px rgba(255,211,92,.2), 0 0 18px rgba(232,151,37,.35); animation: surgeReady 900ms ease-in-out infinite alternate; }
+@keyframes surgeReady { to { filter: brightness(1.18); } }
 @media (max-width: 800px) { .game-controls { gap: 4px; } .control-btn { width: 34px; height: 34px; } .speed-btn { width: 42px; } .merge-btn { height: 34px; padding: 0 8px; font-size: 11px; } }
