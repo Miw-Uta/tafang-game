@@ -149,7 +149,8 @@
       if (rules.cultivation) {
         const sameLevel = this.level === other.level;
         const resonanceBonus = sameLevel ? Math.max(0, Number(rules.resonanceBonus?.(this.level, this) || 0)) : 0;
-        this.growth += Math.max(1, other.level) + resonanceBonus;
+        const cultivationValue = Math.max(1, Number(rules.cultivationValue?.(other, this) || other.level));
+        this.growth += cultivationValue + resonanceBonus;
         this.lastAbsorbKind = sameLevel && resonanceBonus > 0 ? 'resonance' : 'cultivation';
         const threshold = rules.growthThreshold || (level => Math.max(1, level));
         while (this.level < (rules.maxLevel || Infinity) && this.growth >= threshold(this.level, this)) {
@@ -165,9 +166,10 @@
     }
 
     sacrificeValue(rules = {}) {
-      const tierMultiplier = 1 + Math.max(0, this.evoTier || 0) * (rules.tierBonus || .5);
-      const fusionMultiplier = this.evo === 'base' ? 1 : (rules.evolvedMultiplier || 1.25);
-      return Math.max(1, Math.floor(this.level * tierMultiplier * fusionMultiplier));
+      const efficiency = rules.efficiency || .6;
+      const tierBonus = Math.max(0, this.evoTier || 0) * (rules.tierBonus || .15);
+      const fusionBonus = rules.isFusion?.(this) ? (rules.fusionBonus || .25) : 0;
+      return Math.max(1, Math.floor(this.level * (efficiency + tierBonus + fusionBonus)));
     }
 
     evolveTo(definitionKey, { tier = this.evoTier + 1, path = this.evolutionPath } = {}) {
@@ -188,7 +190,8 @@
       const targets = pattern.select(this, context.enemies, definition, context);
       if (!targets.length) return targets;
 
-      this.cool = definition.rate;
+      const cooldownMultiplier = context.cooldownMultiplier?.(this, definition) || 1;
+      this.cool = definition.rate * cooldownMultiplier;
       if (context.launch) {
         context.launch(this, targets, definition);
         return targets;

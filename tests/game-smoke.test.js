@@ -4,6 +4,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
+const indexMarkup = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const elements = new Map();
 const classList = () => ({ add() {}, remove() {}, toggle() {}, contains() { return false; } });
 function element(id) {
@@ -41,9 +42,12 @@ const sandbox = {
   Math, Map, Set, Object, Array
 };
 vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(path.join(root, 'content-system.js'), 'utf8'), sandbox, { filename: 'content-system.js' });
+vm.runInContext(fs.readFileSync(path.join(root, 'game-content.js'), 'utf8'), sandbox, { filename: 'game-content.js' });
 vm.runInContext(fs.readFileSync(path.join(root, 'enemy-system.js'), 'utf8'), sandbox, { filename: 'enemy-system.js' });
 vm.runInContext(fs.readFileSync(path.join(root, 'evolution-system.js'), 'utf8'), sandbox, { filename: 'evolution-system.js' });
 vm.runInContext(fs.readFileSync(path.join(root, 'tower-system.js'), 'utf8'), sandbox, { filename: 'tower-system.js' });
+vm.runInContext(fs.readFileSync(path.join(root, 'synergy-system.js'), 'utf8'), sandbox, { filename: 'synergy-system.js' });
 vm.runInContext(`${fs.readFileSync(path.join(root, 'game.js'), 'utf8')}
   globalThis.__smoke = {
     towerClass: towers[0].constructor.name,
@@ -124,7 +128,7 @@ vm.runInContext(`${fs.readFileSync(path.join(root, 'game.js'), 'utf8')}
   globalThis.__smoke.differentBranchesDoNotMerge = !canMergeTowers(waterBranchOne, waterBranchTwo);
 
   towers = [towerFactory.create({ col: 0, row: 0, level: 2 }), towerFactory.create({ col: 1, row: 0, level: 2 })];
-  pendingEvolution = null; autoMerge();
+  pendingEvolution = null; running = false; autoMerge();
   const mergedOnce = towers.length === 1 && towers[0].level === 3;
   undoAutoMerge();
   globalThis.__smoke.autoMergeUndo = mergedOnce && towers.length === 2 && towers.every(tower => tower.level === 2);
@@ -132,7 +136,51 @@ vm.runInContext(`${fs.readFileSync(path.join(root, 'game.js'), 'utf8')}
   towers = [towerFactory.create({ col: 0, row: 0, level: 6 }), towerFactory.create({ col: 1, row: 0, level: 3, evo: 'fire', evoTier: 1, evolutionPath: 'fire' })];
   selectedTower = towers[0]; cultivationTarget = selectedTower;
   sacrificeTower(selectedTower, towers[1]);
-  globalThis.__smoke.anyTowerSacrifice = towers.length === 1 && selectedTower.growth === 5;
+  globalThis.__smoke.anyTowerSacrifice = towers.length === 1 && selectedTower.growth === 2;
+
+  towers = [towerFactory.create({ col: 0, row: 0, level: 4 })];
+  selectedTower = towers[0]; reserve = { 5: 10 }; pendingEvolution = null; cultivationTarget = null; running = false;
+  infuseReserveToMilestone();
+  globalThis.__smoke.batchInfusionStopsAtNode = selectedTower.level === 5 && selectedTower.growth === 0 && reserve[5] === 9 && pendingEvolution === selectedTower && seedGrowthValue(5) === 16;
+
+  pendingEvolution = null;
+  const symbiosisLow = towerFactory.create({ col: 0, row: 0, level: 1, evo: 'metal', evoTier: 1, evolutionPath: 'metal' });
+  const symbiosisHigh = towerFactory.create({ col: 1, row: 0, level: 3, evo: 'fire', evoTier: 1, evolutionPath: 'fire' });
+  towers = [symbiosisLow, symbiosisHigh]; cultivationPolicy = 'symbiosis'; reserve = { 1: 2 };
+  autoCultivateAfterWave();
+  globalThis.__smoke.symbiosisAutoAllocation = reserveEssenceTotal() === 0 && symbiosisLow.growth === 2 && symbiosisHigh.growth === 0;
+  globalThis.__smoke.symbiosisBondBonus = cultivationDamageMultiplier(symbiosisLow);
+
+  const focusCore = towerFactory.create({ col: 0, row: 0, level: 1 });
+  const focusSupport = towerFactory.create({ col: 1, row: 0, level: 1, evo: 'wood', evoTier: 1, evolutionPath: 'wood' });
+  towers = [focusCore, focusSupport]; cultivationPolicy = 'focus'; cultivationCore = focusCore; reserve = { 1: 2 };
+  autoCultivateAfterWave();
+  globalThis.__smoke.focusFeedsCoreOnly = reserveEssenceTotal() === 0 && focusCore.growth === 2 && focusSupport.growth === 0;
+  globalThis.__smoke.focusMultipliers = [cultivationDamageMultiplier(focusCore), cultivationDamageMultiplier(focusSupport)];
+
+  towers = [focusCore, focusSupport]; cultivationPolicy = 'reserve'; reserve = { 5: 13 };
+  const reserveBefore = reserveEssenceTotal();
+  autoCultivateAfterWave();
+  globalThis.__smoke.reserveHoldsResources = reserveEssenceTotal() === reserveBefore;
+  globalThis.__smoke.reserveDamageBonus = cultivationDamageMultiplier(focusCore);
+  activeCultivationPolicy = 'symbiosis'; activeCultivationCore = focusCore; running = true;
+  globalThis.__smoke.policyLockedForWave = cultivationDamageMultiplier(focusCore) === 1;
+  running = false;
+
+  towers = [towerFactory.create({ col: 0, row: 0, level: 3 }), towerFactory.create({ col: 1, row: 0, level: 2 })];
+  selectedTower = towers[0]; pendingEvolution = null; cultivationTarget = null;
+  beginCultivation();
+  globalThis.__smoke.mouseCultivationStarts = cultivationTarget === selectedTower && document.getElementById('mapCultivateBtn').innerHTML.includes('取消祭炼');
+  beginCultivation();
+  globalThis.__smoke.mouseCultivationCancels = cultivationTarget === null;
+
+  pendingEvolution = null; cultivationTarget = null; reserve = {}; coins = 0;
+  gameSession.reset({ modeKey: 'endless', mapKey: 'grove' }); wave = 1; gameSession.startWave(); running = true;
+  completeWave();
+  globalThis.__smoke.automaticPreparation = !running && nextWaveTimer === 4 && gameSession.status === 'preparing' && document.getElementById('waveBtn').disabled === false;
+  update(4.1);
+  globalThis.__smoke.automaticNextWave = running && nextWaveTimer === 0 && gameSession.status === 'running' && wave === 2;
+  globalThis.__smoke.balancedGrowthCurve = growthThreshold(10) === 28 && growthThreshold(19) === 46;
 `, sandbox, { filename: 'game.js' });
 
 assert.equal(sandbox.__smoke.towerClass, 'Tower');
@@ -161,4 +209,31 @@ assert.equal(sandbox.__smoke.reserveInjectMerge, true);
 assert.equal(sandbox.__smoke.differentBranchesDoNotMerge, true);
 assert.equal(sandbox.__smoke.autoMergeUndo, true);
 assert.equal(sandbox.__smoke.anyTowerSacrifice, true);
+assert.equal(sandbox.__smoke.batchInfusionStopsAtNode, true);
+assert.equal(sandbox.__smoke.symbiosisAutoAllocation, true);
+assert.equal(sandbox.__smoke.symbiosisBondBonus, 1.1);
+assert.equal(sandbox.__smoke.focusFeedsCoreOnly, true);
+assert.deepEqual(Array.from(sandbox.__smoke.focusMultipliers), [1.3, .9]);
+assert.equal(sandbox.__smoke.reserveHoldsResources, true);
+assert.equal(sandbox.__smoke.reserveDamageBonus, 1.2);
+assert.equal(sandbox.__smoke.policyLockedForWave, true);
+assert.equal(sandbox.__smoke.mouseCultivationStarts, true);
+assert.equal(sandbox.__smoke.mouseCultivationCancels, true);
+assert.equal(sandbox.__smoke.automaticPreparation, true);
+assert.equal(sandbox.__smoke.automaticNextWave, true);
+assert.equal(sandbox.__smoke.balancedGrowthCurve, true);
+assert.deepEqual(Array.from(sandbox.window.GameApp.levels(), level => level.key), ['groveGate', 'mirrorMarsh', 'emberPass']);
+const campaignSession = sandbox.window.GameApp.startMode('campaign', 'groveGate');
+assert.equal(campaignSession.modeKey, 'campaign');
+assert.equal(campaignSession.levelKey, 'groveGate');
+assert.equal(campaignSession.mapKey, 'grove');
+assert.equal(elements.get('modeEntryText').textContent, '第一章 · 林地之门');
+assert.equal(elements.get('waveTotal').textContent, '/ 3');
+sandbox.window.GameApp.navigatePage('battle');
+assert.equal(elements.get('hubPage').hidden, true);
+assert.equal(elements.get('campaignPage').hidden, true);
+assert.equal(elements.get('battlePage').hidden, false);
+assert.ok(indexMarkup.indexOf('id="towerContextActions"') < indexMarkup.indexOf('<canvas id="game"'));
+assert.equal(elements.get('mapSpirit').textContent, 0);
+assert.match(elements.get('mapReserveList').innerHTML, /暂无灵种/);
 console.log('game-smoke: attack variants and evolved-tower standby storage passed');

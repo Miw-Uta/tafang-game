@@ -62,7 +62,7 @@ function testMergeRulesAndEvolution() {
   assert.equal(resonant.absorb(twin, { identityResolver: tower => tower.evo, maxLevel: 20, cultivation: true, growthThreshold: level => level, resonanceBonus: level => Math.ceil(level * .5) }), true);
   assert.equal(resonant.level, 7);
   assert.equal(resonant.lastAbsorbKind, 'resonance');
-  assert.equal(factory.create({ col: 10, row: 0, level: 4, evo: 'water', evoTier: 1 }).sacrificeValue(), 7);
+  assert.equal(factory.create({ col: 10, row: 0, level: 4, evo: 'water', evoTier: 1 }).sacrificeValue(), 3);
 }
 
 function testAttackStrategies() {

@@ -191,10 +191,11 @@
       let roll = this.random() * total;
       return items.find(item => (roll -= item.weight) <= 0) || items[0];
     }
-    create({ wave, spawnIndex, hpScale, speedScale, resist, primaryTrait = null, neutral = false }) {
+    create({ wave, spawnIndex, hpScale, speedScale, resist, primaryTrait = null, neutral = false, archetype = null, roster = [] }) {
       const role = this.roleFor(wave, spawnIndex);
-      const pool = this.enemyCatalog.values().filter(item => item.role === role && item.unlockWave <= wave);
-      const definition = this.weightedChoice(pool);
+      const rosterPool = roster.length ? this.enemyCatalog.values().filter(item => roster.includes(item.key)) : [];
+      const pool = rosterPool.length ? rosterPool : this.enemyCatalog.values().filter(item => item.role === role && item.unlockWave <= wave);
+      const definition = archetype ? this.enemyCatalog.get(archetype) : this.weightedChoice(pool);
       const traits = [];
       if (primaryTrait) traits.push(primaryTrait);
       const traitPool = this.traitCatalog.values().map(item => item.key).filter(key => key !== primaryTrait);

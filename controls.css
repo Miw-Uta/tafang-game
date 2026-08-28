@@ -1,4 +1,8 @@
 .game-controls { display: flex; gap: 7px; }
+.mode-entry-btn { height: 42px; display: flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid #c5d9bf; border-radius: 7px; background: #fffdf6; color: #36533e; font-family: inherit; cursor: pointer; }
+.mode-entry-btn span { color: #d97822; font-size: 19px; font-weight: 900; }
+.mode-entry-btn b { font-size: 11px; white-space: nowrap; }
+.mode-entry-btn:hover { border-color: #e6a052; background: #fff5df; }
 .control-btn { width: 39px; height: 39px; border: 1px solid #dce8d6; border-radius: 10px; background: #fffdf7; color: #526a55; font: 900 13px 'Nunito', 'Noto Sans SC', sans-serif; cursor: pointer; }
 .control-btn:hover { border-color: #f2ad62; background: #fff4df; }
 .control-btn:disabled { cursor: not-allowed; opacity: .38; }
@@ -9,6 +13,38 @@
 .cultivate-btn { width: 100%; margin-top: 6px; padding: 7px; border: 1px solid #c7a052; border-radius: 4px; background: #fff6dc; color: #8c631d; font: 800 9px inherit; cursor: pointer; }
 .cultivate-btn:hover:not(:disabled), .cultivate-btn.active { border-color: #b5791d; background: #ffe8a9; }
 .cultivate-btn:disabled { cursor: not-allowed; opacity: .4; }
+.infuse-btn { border-color: #77a06f; background: #edf6e8; color: #3f7045; }
+.infuse-btn:hover:not(:disabled) { border-color: #4f8154; background: #dff1d8; }
+.cultivation-policy { margin-top: 9px; padding: 8px; border: 1px solid #cadbc4; border-radius: 6px; background: #fffdf7; }
+.cultivation-policy > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cultivation-policy > div:first-child > b { flex: none; color: #36533e; font-size: 10px; }
+.cultivation-policy > div:first-child > small { color: #718178; font-size: 7px; line-height: 1.35; text-align: right; }
+.policy-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 7px; }
+.policy-options button { min-width: 0; height: 34px; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 3px; border: 1px solid #d5e1d0; border-radius: 4px; background: #f5f9f2; color: #546b59; font-family: inherit; cursor: pointer; }
+.policy-options button span { font-size: 12px; }
+.policy-options button b { overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.policy-options button:hover, .policy-options button.active { border-color: #d99837; background: #fff0c6; color: #80571f; }
+.policy-options button.active { box-shadow: inset 0 -2px #dda03c; }
+.core-assign-btn { width: 100%; min-height: 27px; margin-top: 5px; border: 1px dashed #c69139; border-radius: 4px; background: #fff8e7; color: #81591e; font: 800 8px 'Nunito','Noto Sans SC',sans-serif; cursor: pointer; }
+.core-assign-btn:hover:not(:disabled) { border-style: solid; background: #ffedbd; }
+.core-assign-btn:disabled { cursor: not-allowed; opacity: .42; }
+.formation-bonds { margin-bottom: 10px; padding-bottom: 9px; border-bottom: 1px solid #d5e1d0; }
+.formation-bonds > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.formation-bonds > div:first-child > b { color: #30483a; font-size: 10px; }
+.formation-bonds > div:first-child > small { color: #8b6a2d; font-size: 8px; font-weight: 800; }
+.bond-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
+.bond { min-width: 0; display: grid; grid-template-columns: 20px minmax(0, 1fr); grid-template-rows: 1fr 1fr; align-items: center; column-gap: 4px; min-height: 35px; padding: 4px 5px; border: 1px solid #d4dfcf; border-radius: 4px; background: #f7faf4; color: #69796d; }
+.bond > i { grid-row: 1 / 3; color: #8a978c; font-size: 14px; font-style: normal; text-align: center; }
+.bond > b { overflow: hidden; font-size: 8px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+.bond > small { overflow: hidden; font-size: 7px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+.bond.active { border-color: #d79a3e; background: #fff1c9; color: #79501d; box-shadow: inset 3px 0 #df9c35; }
+.bond.active > i { color: #c87525; }
+.bond-preview { margin-top: 5px; color: #7b897e; font-size: 7px; }
+.bond-preview .bond { display: inline-flex; min-height: 0; margin-left: 4px; padding: 2px 5px; border-style: dashed; }
+.bond-preview .bond > i { font-size: 9px; }
+.bond-preview .bond > small { margin-left: 2px; }
+.bond-empty { grid-column: 1 / -1; padding: 7px; color: #89968b; font-size: 8px; text-align: center; }
+.discovery-record > b, .discovery-record > small { display: block; }
 .surge-btn { position: relative; isolation: isolate; min-width: 142px; height: 44px; overflow: hidden; display: flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid #e5b353; border-radius: 8px; background: #302f29; color: #fff4cc; cursor: pointer; text-align: left; }
 .surge-btn > * { position: relative; z-index: 1; }
 .surge-btn i { position: absolute; z-index: 0; inset: 0 auto 0 0; width: 0; background: #c87824; opacity: .68; transition: width 180ms ease; }
@@ -19,4 +55,4 @@
 .surge-btn:disabled { cursor: not-allowed; opacity: .76; }
 .surge-btn.ready { border-color: #ffd76b; box-shadow: 0 0 0 2px rgba(255,211,92,.2), 0 0 18px rgba(232,151,37,.35); animation: surgeReady 900ms ease-in-out infinite alternate; }
 @keyframes surgeReady { to { filter: brightness(1.18); } }
-@media (max-width: 800px) { .game-controls { gap: 4px; } .control-btn { width: 34px; height: 34px; } .speed-btn { width: 42px; } .merge-btn { height: 34px; padding: 0 8px; font-size: 11px; } }
+@media (max-width: 800px) { .game-controls { gap: 4px; } .control-btn { width: 34px; height: 34px; } .speed-btn { width: 42px; } .merge-btn { height: 34px; padding: 0 8px; font-size: 11px; } .mode-entry-btn { margin-left: auto; } }
