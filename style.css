@@ -75,3 +75,4 @@ button:focus-visible{outline:3px solid rgba(232,139,50,.35);outline-offset:2px}
 @media(max-width:800px){.field-switch{order:4;flex:1;min-width:0}.field-switch small{white-space:normal}.stage-head{align-items:center}.wave-event{order:2}.wave-box{order:3}}
 @media(max-width:520px){.stat{padding:5px 6px}.stage-head{align-items:stretch}.wave-event{min-width:0}.wave-box{min-width:75px}.surge-btn{width:100%;order:2}.game-controls{order:3}.wave-btn{order:4}.summon-actions{grid-template-columns:1fr}.evo-modal{padding:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.standby-seed{border-color:#8ca9c8;background:#f1f7fd;color:#355d82}.standby-seed:hover,.standby-seed.active{border-color:#4d8dc4;background:#e3f1ff}.standby-seed small{color:#5d7690;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

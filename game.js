@@ -106,6 +106,47 @@ const branchOf = Object.fromEntries(Object.keys(evolution).map(key => [key, evol
 const routeWeights = Object.fromEntries(routes.map(key => [key, evolution[key].rare ? 1 : 7]));
 const attackModeNames = { single: '单体重击', pierce: '直线穿透', chain: '连锁攻击', splash: '范围溅射', omni: '全域攻击' };
 const effectNames = { stun: '概率眩晕', weaken: '削弱护甲', slow: '持续减速', burn: '持续灼烧', silence: '压制减速', freeze: '冻结控制', poison: '持续中毒', fiveElements: '五行复合效果', taiji: '易伤与减速' };
+const projectileStyleNames = { seed:'橡果弹',blade:'旋刃',thorn:'针雨',bubble:'水珠',fireball:'抛射火球',boulder:'击退巨石',shadow:'曲线影弹',sun:'日轮弹幕',windblade:'疾风扇刃',lightning:'跃动雷弧',frost:'冰晶齐射',void:'虚空星弹',spirit:'五灵弹幕',taiji:'阴阳轮' };
+const deliveryNames = { projectile:'远程弹幕',bombard:'抛物轰炸',melee:'近战攻击',beam:'直线贯穿',chain:'逐段连锁',area:'落点范围',rain:'持续弹雨',nova:'全域阵法' };
+const projectileProfiles = {
+  base: { projectileStyle: 'seed', projectileSpeed: 360, volley: 1 },
+  metal: { projectileStyle: 'blade', projectileSpeed: 430, volley: 1 },
+  wood: { projectileStyle: 'thorn', projectileSpeed: 560, volley: 2 },
+  water: { projectileStyle: 'bubble', projectileSpeed: 320, volley: 1 },
+  fire: { projectileStyle: 'fireball', projectileSpeed: 270, arc: 48, splashRadius: 82, volley: 1 },
+  earth: { projectileStyle: 'boulder', projectileSpeed: 235, arc: 64, volley: 1 },
+  yin: { projectileStyle: 'shadow', projectileSpeed: 350, curve: 34, volley: 1 },
+  yang: { projectileStyle: 'sun', projectileSpeed: 390, arc: 24, splashRadius: 92, volley: 2 },
+  wind: { projectileStyle: 'windblade', projectileSpeed: 650, volley: 3 },
+  thunder: { projectileStyle: 'lightning', projectileSpeed: 720, volley: 1 },
+  fiveSpirit: { projectileStyle: 'spirit', projectileSpeed: 460, maxTargets: 12, volley: 2 },
+  taiji: { projectileStyle: 'taiji', projectileSpeed: 420, maxTargets: 16, volley: 2 },
+  emberwood: { projectileStyle: 'fireball', projectileSpeed: 310, arc: 58, splashRadius: 110, volley: 2 },
+  froststorm: { projectileStyle: 'frost', projectileSpeed: 520, volley: 2 },
+  voidstar: { projectileStyle: 'void', projectileSpeed: 400, curve: 45, maxTargets: 12, volley: 2 },
+  ironwood: { projectileStyle: 'thorn', projectileSpeed: 610, volley: 3 }
+};
+function attackDelivery(key, data, lineage) {
+  const fusionDeliveries = { fiveSpirit:'nova', taiji:'nova', emberwood:'bombard', froststorm:'chain', voidstar:'nova', ironwood:'beam' };
+  if (fusionDeliveries[key]) return fusionDeliveries[key];
+  const branch = Number(key.match(/Branch(\d+)$/)?.[1] || 0);
+  if (branch === 1) return ['metal','earth'].includes(lineage) ? 'melee' : 'projectile';
+  if (branch === 2) return ['fire','earth'].includes(lineage) ? 'bombard' : 'area';
+  if (branch === 3 || branch === 6) return 'chain';
+  if (branch === 4) return 'beam';
+  if (branch === 5) return data.effect === 'freeze' ? 'beam' : 'projectile';
+  if (branch === 7) return 'rain';
+  return { base:'projectile', metal:'melee', wood:'beam', water:'chain', fire:'bombard', earth:'melee', yin:'chain', yang:'area', wind:'beam', thunder:'chain' }[lineage] || 'projectile';
+}
+Object.entries(evolution).forEach(([key, data]) => {
+  const lineage = data.parent || key;
+  const profile = projectileProfiles[key] || projectileProfiles[lineage] || projectileProfiles.base;
+  const branchVolley = /Branch(6|7)$/.test(key) ? 1 : 0;
+  data.combat = { ...profile, delivery: attackDelivery(key, data, lineage), ...(data.combat || {}), volley: Math.min(3, profile.volley + branchVolley) };
+});
+const towerCatalog = TowerDomain.TowerCatalog.fromConfig(evolution, key => branchOf[key] || key);
+const towerFactory = new TowerDomain.TowerFactory(towerCatalog);
+const attackPatterns = TowerDomain.AttackPatternRegistry.createDefault();
 const hiddenFusions = [
   { result: 'emberwood', minLevel: 5, clue: '两团烈焰夹护新木，三者构成尖顶。', pattern: [{ parent: 'fire', dx: -1, dy: 0 }, { parent: 'wood', dx: 1, dy: 0 }, { parent: 'fire', dx: 0, dy: -1 }] },
   { result: 'froststorm', minLevel: 5, clue: '流水、长风与惊雷在同一条线上相遇。', pattern: [{ parent: 'water', dx: -1, dy: 0 }, { parent: 'wind', dx: 0, dy: 0 }, { parent: 'thunder', dx: 1, dy: 0 }] },
@@ -140,14 +181,14 @@ const enemyTraits = {
 };
 const enemyTraitKeys = Object.keys(enemyTraits);
 
-let towers, enemies, hits, coins, lives, score, wave, kills, spawned;
-let running, gameWon, finalWave, spawnTimer, drag, selectedTower, selectedEnemy, pendingEvolution, pendingEvolutionStage, evolutionWasPaused, nextWaveTimer, started, paused, speed, last, fiveAttemptSignature, discoveredEvolutions, currentWaveEvent, combo, comboTimer, summonsBought, surgeCharge, screenFlash, lastSummon, battlefieldIndex, reserve, pendingDeployLevel, deployHover, growthMode, growthCycles;
+let towers, enemies, attackEvents, projectiles, hits, coins, lives, score, wave, kills, spawned;
+let running, gameWon, finalWave, spawnTimer, drag, selectedTower, selectedEnemy, pendingEvolution, pendingEvolutionStage, evolutionWasPaused, nextWaveTimer, started, paused, speed, last, fiveAttemptSignature, discoveredEvolutions, currentWaveEvent, combo, comboTimer, summonsBought, surgeCharge, screenFlash, lastSummon, battlefieldIndex, reserve, standbyReserve, pendingDeployLevel, pendingDeployTowerIndex, deployHover, growthMode, growthCycles;
 
 function resetGame() {
-  towers = [{ col: 1, row: 6, level: 1, evo: 'base', evoTier: 0, cool: 0 }];
-  enemies = []; hits = [];
+  towers = [towerFactory.create({ col: 1, row: 6, level: 1 })];
+  enemies = []; attackEvents = []; projectiles = []; hits = [];
   coins = 0; lives = 12; score = 0; wave = 1; kills = 0; spawned = 0;
-  running = false; gameWon = false; finalWave = false; spawnTimer = 0; drag = null; selectedTower = towers[0]; selectedEnemy = null; pendingEvolution = null; pendingEvolutionStage = null; evolutionWasPaused = false; nextWaveTimer = 0; started = false; paused = false; speed = 1; fiveAttemptSignature = null; discoveredEvolutions = new Set(); currentWaveEvent = waveEvents[0]; combo = 0; comboTimer = 0; summonsBought = 0; surgeCharge = 0; screenFlash = 0; lastSummon = []; battlefieldIndex = 0; reserve = {}; pendingDeployLevel = null; deployHover = null; growthMode = 'balanced'; growthCycles = { sprout: 0, balanced: 0, refine: 0 };
+  running = false; gameWon = false; finalWave = false; spawnTimer = 0; drag = null; selectedTower = towers[0]; selectedEnemy = null; pendingEvolution = null; pendingEvolutionStage = null; evolutionWasPaused = false; nextWaveTimer = 0; started = false; paused = false; speed = 1; fiveAttemptSignature = null; discoveredEvolutions = new Set(); currentWaveEvent = waveEvents[0]; combo = 0; comboTimer = 0; summonsBought = 0; surgeCharge = 0; screenFlash = 0; lastSummon = []; battlefieldIndex = 0; reserve = {}; standbyReserve = []; pendingDeployLevel = null; pendingDeployTowerIndex = null; deployHover = null; growthMode = 'balanced'; growthCycles = { sprout: 0, balanced: 0, refine: 0 };
 }
 
 function center(item) { return { x: item.col * CELL + CELL / 2, y: item.row * CELL + CELL / 2 }; }
@@ -176,12 +217,15 @@ function updateSelectionInfo() {
     const type = enemyTypes[selectedEnemy.type];
     const traits = selectedEnemy.traits.length ? selectedEnemy.traits.map(key => `<span style="color:${enemyTraits[key].color}">● ${enemyTraits[key].label}</span>`).join(' · ') : '<span style="color:#748079">无属性</span>';
     const status = selectedEnemy.dead || selectedEnemy.hp <= 0 ? ' · 已击败' : '';
+    const activeStatuses = [[selectedEnemy.burn,'燃烧'],[selectedEnemy.poison,'中毒'],[selectedEnemy.freeze,'冻结'],[selectedEnemy.stun,'眩晕'],[selectedEnemy.slow,'减速'],[selectedEnemy.weaken,'破甲'],[selectedEnemy.taiji,'易伤']].filter(([time])=>time>0).map(([time,label])=>`${label} ${time.toFixed(1)}s`).join(' · ') || '无异常状态';
     const resistEntries = Object.entries(selectedEnemy.resist || {}), highResists = resistEntries.filter(([, value]) => value > .18);
     const resistText = resistEntries.every(([, value]) => value === 0) ? '属性抗性：无' : highResists.map(([key, value]) => `${evolution[key]?.name?.replace('守卫','') || key} ${Math.round(value * 100)}%`).join(' · ') || '属性抗性：低';
-    $('selectedInfo').innerHTML = `<span class="info-icon">${type.icon}</span><div><b>${type.label}${status} · ${traits}</b><small>生命 ${Math.max(0,Math.ceil(selectedEnemy.hp))}/${Math.ceil(selectedEnemy.max)} · 速度 ${selectedEnemy.speed.toFixed(0)} · 护甲 ${Math.round(selectedEnemy.armor*100)}% · 减速抗性 ${Math.round(selectedEnemy.slowResist*100)}% · 再生 ${selectedEnemy.regen.toFixed(1)}/秒 · ${resistText}</small></div>`;
+    $('selectedInfo').innerHTML = `<span class="info-icon">${type.icon}</span><div><b>${type.label}${status} · ${traits}</b><small>生命 ${Math.max(0,Math.ceil(selectedEnemy.hp))}/${Math.ceil(selectedEnemy.max)} · ${activeStatuses}<br>速度 ${selectedEnemy.speed.toFixed(0)} · 护甲 ${Math.round(selectedEnemy.armor*100)}% · 减速抗性 ${Math.round(selectedEnemy.slowResist*100)}% · 再生 ${selectedEnemy.regen.toFixed(1)}/秒 · ${resistText}</small></div>`;
   } else if (selectedTower) {
     const z = evolution[selectedTower.evo];
-    $('selectedInfo').innerHTML = `<span class="info-icon">${z.icon}</span><div><b>${z.name} · Lv.${selectedTower.level}</b><small>${z.desc || '基础单体攻击'} · 伤害 ${z.damage * selectedTower.level} · 射程 ${z.rangeCells}×${z.rangeCells} 格 · ${attackModeNames[z.attackMode] || '特殊攻击'} · ${effectNames[z.effect] || '无附加效果'}</small></div>`;
+    const usesProjectiles = ['projectile','bombard'].includes(z.combat?.delivery), volley = usesProjectiles ? Math.min(3, (z.combat?.volley || 1) + (selectedTower.level >= 10 ? 1 : 0)) : 1;
+    const deliveryDetail = usesProjectiles ? `${projectileStyleNames[z.combat?.projectileStyle] || '能量弹'} · ${volley} 波齐射` : deliveryNames[z.combat?.delivery] || '特殊攻击';
+    $('selectedInfo').innerHTML = `<span class="info-icon">${z.icon}</span><div><b>${z.name} · Lv.${selectedTower.level}</b><small>${z.desc || '基础单体攻击'}<br>伤害 ${z.damage * selectedTower.level} · 射程 ${z.rangeCells}×${z.rangeCells} 格 · ${attackModeNames[z.attackMode] || '特殊攻击'}<br>${deliveryDetail} · ${effectNames[z.effect] || '无附加效果'}</small></div>`;
   } else {
     $('selectedInfo').innerHTML = '<span class="info-icon">🌰</span><div><b>拖动橡果塔改变位置</b><small>点击敌人可查看属性 · Lv.5 选择主路线，Lv.10 选择专属分支</small></div>';
   }
@@ -243,13 +287,18 @@ function updateWorkshop() {
     : '<span>根系正在吸收灵力</span><small>无需购买，进度满后自动凝结并整编</small>';
   const reserveEntries = Object.entries(reserve).filter(([, count]) => count > 0).sort((a,b) => Number(b[0]) - Number(a[0]));
   const reserveCount = reserveEntries.reduce((sum,[,count]) => sum + count, 0);
-  setText('reserveSummary', reserveCount ? `${reserveCount} 枚灵种 · 点击等级后在地图部署` : '召唤结果会在此自动合成');
+  const standbyCount = standbyReserve.length;
+  setText('reserveSummary', reserveCount || standbyCount ? `${reserveCount} 枚灵种 · ${standbyCount} 座待命塔 · 选中后部署` : '召唤结果会在此自动合成');
   if ($('reserveList')) {
-    $('reserveList').innerHTML = reserveEntries.length ? reserveEntries.map(([level,count]) => `<button class="reserve-seed${pendingDeployLevel===Number(level)?' active':''}" data-deploy-level="${level}"><span>🌰</span><b>Lv.${level}</b><small>×${count}</small></button>`).join('') : '<span class="reserve-empty">暂无库存</span>';
+    const seeds = reserveEntries.map(([level,count]) => `<button class="reserve-seed${pendingDeployLevel===Number(level)?' active':''}" data-deploy-level="${level}"><span>🌰</span><b>Lv.${level}</b><small>×${count}</small></button>`).join('');
+    const standby = standbyReserve.map((state,index) => { const data = evolution[state.evo]; return `<button class="reserve-seed standby-seed${pendingDeployTowerIndex===index?' active':''}" data-deploy-standby="${index}" title="${data.name} Lv.${state.level}"><span>${data.icon}</span><b>Lv.${state.level}</b><small>${data.name.replace('守卫','').replace('塔','')}</small></button>`; }).join('');
+    $('reserveList').innerHTML = seeds + standby || '<span class="reserve-empty">暂无库存</span>';
     $('reserveList').querySelectorAll('[data-deploy-level]').forEach(button => button.onclick = () => beginDeploy(Number(button.dataset.deployLevel)));
+    $('reserveList').querySelectorAll('[data-deploy-standby]').forEach(button => button.onclick = () => beginDeployStandby(Number(button.dataset.deployStandby)));
   }
   document.querySelectorAll('[data-growth-mode]').forEach(button => { button.classList.toggle('active', button.dataset.growthMode === growthMode); button.onclick = () => { growthMode = button.dataset.growthMode; processGrowth(); $('message').textContent = `世界树转为${growthModes[growthMode].name}根系：${growthModes[growthMode].desc}。`; ui(); }; });
-  $('recallBtn').disabled = !selectedTower || selectedTower.evo !== 'base' || Boolean(pendingEvolution);
+  $('recallBtn').disabled = !selectedTower || Boolean(pendingEvolution);
+  $('recallBtn').textContent = '↙ 撤回选中的塔';
   $('summonPriceHint').textContent = `${mode.name}根系：${mode.desc}`;
 }
 function updateEvolutionSummary() {
@@ -314,18 +363,34 @@ function compactReserve() {
 }
 function beginDeploy(level) {
   if (!(reserve[level] > 0)) return;
+  pendingDeployTowerIndex = null;
   pendingDeployLevel = pendingDeployLevel === level ? null : level; deployHover = null; selectedTower = null; selectedEnemy = null;
   $('message').textContent = pendingDeployLevel ? `部署 Lv.${level} 灵种：点击地图上的绿色空格。` : '已取消灵种部署。'; ui();
 }
+function beginDeployStandby(index) {
+  if (!standbyReserve[index]) return;
+  pendingDeployLevel = null;
+  pendingDeployTowerIndex = pendingDeployTowerIndex === index ? null : index;
+  deployHover = null; selectedTower = null; selectedEnemy = null;
+  const state = standbyReserve[index];
+  $('message').textContent = pendingDeployTowerIndex ? `部署 ${evolution[state.evo].name} Lv.${state.level}：点击地图上的绿色空格。` : '已取消塔位部署。';
+  ui();
+}
 function deployReserve(col, row) {
-  if (!pendingDeployLevel || !(reserve[pendingDeployLevel] > 0)) return false;
-  if (towers.length >= DEPLOY_LIMIT) { $('message').textContent = `指挥容量已满（${DEPLOY_LIMIT}/${DEPLOY_LIMIT}），请先收回一座普通塔。`; return true; }
+  const deployingStandby = pendingDeployTowerIndex !== null;
+  if ((!pendingDeployLevel || !(reserve[pendingDeployLevel] > 0)) && (!deployingStandby || !standbyReserve[pendingDeployTowerIndex])) return false;
+  if (towers.length >= DEPLOY_LIMIT) { $('message').textContent = `战场编队已满（${DEPLOY_LIMIT}/${DEPLOY_LIMIT}），可先撤回一座塔或等待下一轮整备。`; return true; }
   if (isRoad(col,row) || occupied(col,row)) { $('message').textContent = '这里无法部署，请选择绿色空格。'; return true; }
-  const tower = { col, row, level: pendingDeployLevel, evo: 'base', evoTier: 0, cool: 0 };
-  towers.push(tower); reserve[pendingDeployLevel]--; if (!reserve[pendingDeployLevel]) delete reserve[pendingDeployLevel];
+  const placedLevel = pendingDeployLevel;
+  const tower = deployingStandby
+    ? towerFactory.create({ ...standbyReserve[pendingDeployTowerIndex], col, row, cool: 0 })
+    : towerFactory.create({ col, row, level: pendingDeployLevel });
+  towers.push(tower);
+  if (deployingStandby) standbyReserve.splice(pendingDeployTowerIndex, 1);
+  else { reserve[pendingDeployLevel]--; if (!reserve[pendingDeployLevel]) delete reserve[pendingDeployLevel]; }
   selectedTower = tower; selectedEnemy = null; audioBus.merge();
-  const placedLevel = pendingDeployLevel; pendingDeployLevel = null; deployHover = null;
-  $('message').textContent = `Lv.${placedLevel} 橡果守卫已部署。`; ui();
+  pendingDeployLevel = null; pendingDeployTowerIndex = null; deployHover = null;
+  $('message').textContent = deployingStandby ? `${evolution[tower.evo].name} Lv.${tower.level} 已重新编入战场。` : `Lv.${placedLevel} 橡果守卫已部署。`; ui();
   return true;
 }
 function processGrowth() {
@@ -346,10 +411,17 @@ function gainSpirit(amount) {
   processGrowth();
 }
 function recallSelectedTower() {
-  if (!selectedTower || selectedTower.evo !== 'base' || pendingEvolution) { $('message').textContent = '只有未进化的普通塔可以收回灵种仓。'; return; }
-  const tower = selectedTower; towers = towers.filter(item => item !== tower); reserve[tower.level] = (reserve[tower.level] || 0) + 1;
-  const merged = compactReserve(); selectedTower = null; pendingDeployLevel = null;
-  $('message').textContent = `Lv.${tower.level} 普通塔已收回${merged ? `，仓内自动整编 ${merged} 次` : ''}。`; ui();
+  if (!selectedTower || pendingEvolution) { $('message').textContent = '请先选择一座要撤回的塔，并完成当前进化选择。'; return; }
+  const tower = selectedTower; towers = towers.filter(item => item !== tower);
+  if (tower.evo === 'base') {
+    reserve[tower.level] = (reserve[tower.level] || 0) + 1;
+    const merged = compactReserve(); selectedTower = null; pendingDeployLevel = null; pendingDeployTowerIndex = null;
+    $('message').textContent = `Lv.${tower.level} 普通塔已收回${merged ? `，仓内自动整编 ${merged} 次` : ''}。`;
+  } else {
+    standbyReserve.push(tower.snapshot()); selectedTower = null; pendingDeployLevel = null; pendingDeployTowerIndex = null;
+    $('message').textContent = `${evolution[tower.evo].name} Lv.${tower.level} 已进入待命塔仓，进化路线完整保留。`;
+  }
+  ui();
 }
 function pickRoutes(count = 3) {
   const pool = [...routes], picks = [];
@@ -361,7 +433,7 @@ function pickRoutes(count = 3) {
   }
   return picks;
 }
-function towerBranch(tower) { return tower.evo === 'base' ? (tower.evolutionPath || 'base') : branchOf[tower.evo]; }
+function towerBranch(tower) { return tower.branch(key => branchOf[key] || key); }
 function pickBranches(parent, count = 3) {
   const pool = [...(branchKeys[parent] || [])];
   const picks = [];
@@ -372,12 +444,9 @@ function burst(x, y, color) {
   const count = runtime.reducedMotion ? 3 : 7;
   for (let i = 0; i < count && hits.length < runtime.maxHits; i++) hits.push({ x, y, life: 1, color, vx: (Math.random() - .5) * 55, vy: (Math.random() - .5) * 55 });
 }
-function attackEffect(t, target, z) {
-  const p = center(t), q = 'dist' in target ? target : center(target), angle = Math.atan2(q.y - p.y, q.x - p.x);
-  const effectType = t.evo === 'fiveSpirit' ? 'five' : t.evo === 'taiji' ? 'taiji' : t.evo === 'earth' || z.attackMode === 'splash' ? 'impact' : z.attackMode === 'chain' ? 'chain' : z.attackMode === 'pierce' ? 'pierce' : 'slash';
-  if (hits.length < runtime.maxHits) hits.push({ type: effectType, x: q.x, y: q.y, originX: p.x, originY: p.y, angle, radius: attackRadius(z) * .72, life: 1, color: z.color, evo: t.evo, glyph: z.icon });
-  burst(q.x, q.y, z.color);
-  if (t.evo === 'base') audioBus.hit();
+function statusText(target, label, color) {
+  if (hits.length >= runtime.maxHits) return;
+  hits.push({ type: 'statusText', x: target.x, y: target.y - target.radius - 10, life: 1, color, label });
 }
 function damageTarget(t, target, z) {
   const field = currentBattlefield(), branch = towerBranch(t);
@@ -386,20 +455,122 @@ function damageTarget(t, target, z) {
   const resistance = target.resist?.[towerBranch(t)] || 0;
   target.hp -= rawDamage * (1 - Math.max(0, (target.armor || 0) - (target.weaken > 0 ? .15 : 0))) * (1 - resistance);
   if ('dist' in target) {
-    if (z.effect === 'slow') target.slow = Math.max(target.slow || 0, 1.6 * (1 - (target.slowResist || 0)));
-    if (z.effect === 'burn') { target.burn = Math.max(target.burn || 0, 3); target.burnSource = t; }
-    if (z.effect === 'weaken') target.weaken = Math.max(target.weaken || 0, 3);
-    if (z.effect === 'stun' && Math.random() < (t.evo==='earth'?.38:.22)) { target.stun = Math.max(target.stun || 0, t.evo==='earth'?.85:.6); if(t.evo==='earth'){target.dist=Math.max(0,target.dist-42);target.knockback=1;} }
-    if (z.effect === 'silence') target.slow = Math.max(target.slow || 0, 1.1);
-    if (z.effect === 'freeze') { target.slow = Math.max(target.slow || 0, 2.4); target.stun = Math.max(target.stun || 0, .35); }
-    if (z.effect === 'poison') { target.poison = Math.max(target.poison || 0, 4); target.poisonSource = t; }
-    if (z.effect === 'fiveElements') { target.slow=Math.max(target.slow||0,2);target.burn=Math.max(target.burn||0,4);target.burnSource=t;target.weaken=Math.max(target.weaken||0,5);if(Math.random()<.35)target.stun=Math.max(target.stun||0,.8); }
-    if (z.effect === 'taiji') { target.taiji = Math.max(target.taiji || 0, 5); target.slow = Math.max(target.slow || 0, 1.8); }
+    if (z.effect === 'slow') { if (!(target.slow > .3)) statusText(target, '减速', '#8cecff'); target.slow = Math.max(target.slow || 0, 3.2 * (1 - (target.slowResist || 0))); }
+    if (z.effect === 'burn') { if (!(target.burn > .3)) statusText(target, '燃烧', '#ff9b45'); target.burn = Math.max(target.burn || 0, 5); target.burnSource = t; }
+    if (z.effect === 'weaken') { if (!(target.weaken > .3)) statusText(target, '破甲', '#d9c36f'); target.weaken = Math.max(target.weaken || 0, 5); }
+    if (z.effect === 'stun' && Math.random() < (t.evo === 'earth' ? .55 : .34)) {
+      if (!(target.stun > .2)) statusText(target, '眩晕!', '#ffe467');
+      target.stun = Math.max(target.stun || 0, t.evo === 'earth' ? 1.4 : 1);
+      if (t.evo === 'earth') { target.dist = Math.max(0, target.dist - 78); target.knockback = 1; statusText(target, '击退', '#ffd08a'); }
+    }
+    if (z.effect === 'silence') { if (!(target.silence > .3)) statusText(target, '压制', '#c3a8ff'); target.silence = Math.max(target.silence || 0, 3); target.slow = Math.max(target.slow || 0, 3); }
+    if (z.effect === 'freeze') { if (!(target.freeze > .3)) statusText(target, '冻结!', '#d8fbff'); target.freeze = Math.max(target.freeze || 0, 3.8); target.slow = Math.max(target.slow || 0, 3.8); target.stun = Math.max(target.stun || 0, 1.25); }
+    if (z.effect === 'poison') { if (!(target.poison > .3)) statusText(target, '中毒', '#9bea62'); target.poison = Math.max(target.poison || 0, 6); target.poisonSource = t; }
+    if (z.effect === 'fiveElements') { target.slow=Math.max(target.slow||0,3.5);target.burn=Math.max(target.burn||0,5);target.burnSource=t;target.weaken=Math.max(target.weaken||0,6);if(Math.random()<.45)target.stun=Math.max(target.stun||0,1.1);statusText(target,'五行侵蚀','#fff0a0'); }
+    if (z.effect === 'taiji') { target.taiji = Math.max(target.taiji || 0, 6); target.slow = Math.max(target.slow || 0, 3); statusText(target, '易伤', '#f1e8ff'); }
   }
-  if (branchOf[t.evo] === 'water' && 'dist' in target) target.slow = Math.max(target.slow || 0, 1.6 * (1 - (target.slowResist || 0)));
+  if (branchOf[t.evo] === 'water' && 'dist' in target) target.slow = Math.max(target.slow || 0, 3.2 * (1 - (target.slowResist || 0)));
   if (target.hp > 0 || target.dead) return;
   target.dead = true;
   combo = comboTimer > 0 ? combo + 1 : 1; comboTimer = 2.2; const comboBonus = 1 + Math.min(.5, Math.floor(combo / 5) * .1); const rewardScale = (currentWaveEvent?.reward || 1) * currentBattlefield().reward; gainSpirit((10 + wave) * enemyTypes[target.type].reward * rewardScale); score += Math.round(100 * t.level * enemyTypes[target.type].reward * comboBonus); kills++; surgeCharge = Math.min(100, surgeCharge + (target.type === 'boss' ? 35 : target.type === 'elite' ? 18 : 9)); if(combo>1&&hits.length<runtime.maxHits)hits.push({type:'text',x:target.x,y:target.y-20,life:1,color:'#fff3a6',label:`${combo} 连击`});
+}
+function launchProjectiles(tower, targets, definition) {
+  const combat = definition.combat || {};
+  const baseVolley = combat.volley || 1;
+  const volley = runtime.reducedMotion ? 1 : Math.min(3, baseVolley + (tower.level >= 10 ? 1 : 0));
+  const focusTargets = definition.attackMode === 'splash' ? [targets[0]] : targets;
+  const origin = center(tower);
+  focusTargets.forEach((target, targetIndex) => {
+    for (let shot = 0; shot < volley; shot++) {
+      if (projectiles.length >= 320) return;
+      const spread = (shot - (volley - 1) / 2) * 7;
+      const payloadTargets = definition.attackMode === 'splash' ? targets : [target];
+      const chainOrigin = definition.attackMode === 'chain' && targetIndex > 0 ? targets[targetIndex - 1] : origin;
+      projectiles.push({
+        tower, target, payloadTargets, definition,
+        x: chainOrigin.x, y: chainOrigin.y, originX: chainOrigin.x + spread, originY: chainOrigin.y,
+        targetX: target.x, targetY: target.y,
+        age: 0, delay: shot * .095 + targetIndex * .025,
+        duration: Math.max(.14, Math.hypot(target.x - chainOrigin.x, target.y - chainOrigin.y) / (combat.projectileSpeed || 400)),
+        style: combat.projectileStyle || 'seed', arc: combat.arc || 0, curve: combat.curve || 0,
+        damageScale: 1 / volley, appliesEffect: shot === 0, rotation: Math.random() * Math.PI * 2, dead: false
+      });
+    }
+  });
+}
+function launchAttack(tower, targets, definition) {
+  const delivery = definition.combat?.delivery || 'projectile';
+  if (delivery === 'projectile' || delivery === 'bombard') { launchProjectiles(tower, targets, definition); return; }
+  if (attackEvents.length >= 160) return;
+  const timings = {
+    melee: { impactAt: .14, duration: .34 }, beam: { impactAt: .12, duration: .38 },
+    chain: { impactAt: .08, duration: .28 + targets.length * .1 }, area: { impactAt: .38, duration: .68 },
+    rain: { impactAt: .48, duration: .82 }, nova: { impactAt: .24, duration: .65 }
+  };
+  const timing = timings[delivery] || timings.beam;
+  attackEvents.push({
+    type: delivery, tower, targets: [...targets], definition, age: 0,
+    impactAt: timing.impactAt, duration: timing.duration, resolved: false,
+    resolvedTargets: new Set(), focusX: targets[0].x, focusY: targets[0].y,
+    seed: Math.random() * 1000
+  });
+}
+function resolveAttackTarget(event, target) {
+  if (!target || target.dead || target.hp <= 0 || event.resolvedTargets.has(target)) return;
+  event.resolvedTargets.add(target);
+  damageTarget(event.tower, target, event.definition);
+  burst(target.x, target.y, event.definition.color);
+}
+function updateAttackEvents(dt) {
+  attackEvents.forEach(event => {
+    event.age += dt;
+    if (event.type === 'chain') {
+      event.targets.forEach((target, index) => { if (event.age >= event.impactAt + index * .09) resolveAttackTarget(event, target); });
+    } else if (!event.resolved && event.age >= event.impactAt) {
+      event.resolved = true;
+      event.targets.forEach(target => resolveAttackTarget(event, target));
+    }
+  });
+  attackEvents = attackEvents.filter(event => event.age < event.duration);
+}
+function resolveProjectile(projectile) {
+  if (projectile.dead) return;
+  projectile.dead = true;
+  const validTargets = projectile.payloadTargets.filter(target => !target.dead && target.hp > 0);
+  if (!validTargets.length) return;
+  const scaledDefinition = { ...projectile.definition, damage: projectile.definition.damage * projectile.damageScale, effect: projectile.appliesEffect ? projectile.definition.effect : null };
+  validTargets.forEach(target => damageTarget(projectile.tower, target, scaledDefinition));
+  burst(projectile.targetX, projectile.targetY, projectile.definition.color);
+  if (projectile.tower.evo === 'base') audioBus.hit();
+}
+function updateProjectiles(dt) {
+  projectiles.forEach(projectile => {
+    if (projectile.delay > 0) { projectile.delay -= dt; return; }
+    projectile.age += dt;
+    if (!projectile.target.dead) { projectile.targetX = projectile.target.x; projectile.targetY = projectile.target.y; }
+    const progress = Math.min(1, projectile.age / projectile.duration);
+    const eased = 1 - (1 - progress) * (1 - progress);
+    const dx = projectile.targetX - projectile.originX, dy = projectile.targetY - projectile.originY;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const curve = Math.sin(progress * Math.PI) * projectile.curve;
+    projectile.x = projectile.originX + dx * eased - dy / distance * curve;
+    projectile.y = projectile.originY + dy * eased + dx / distance * curve - Math.sin(progress * Math.PI) * projectile.arc;
+    projectile.rotation += dt * 12;
+    if (progress >= 1) resolveProjectile(projectile);
+  });
+  projectiles = projectiles.filter(projectile => !projectile.dead);
+}
+function towerCombatContext() {
+  return {
+    catalog: towerCatalog,
+    patterns: attackPatterns,
+    enemies,
+    positionOf: center,
+    rangeOf: tower => currentAttackRadius(towerCatalog.get(tower.evo)),
+    damage: damageTarget,
+    visualize: () => {},
+    launch: launchAttack
+  };
 }
 function drawGrid() {
   for (let row = 0; row < ROWS; row++) for (let col = 0; col < COLS; col++) {
@@ -454,23 +625,150 @@ function drawFusionHint() {
     ctx.restore();
   });
 }
+function drawJaggedLink(from, to, color, width, seed) {
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(from.x, from.y);
+  for (let step = 1; step < 6; step++) {
+    const t = step / 6, wobble = Math.sin(seed + step * 8.7) * 8;
+    const dx = to.x - from.x, dy = to.y - from.y, length = Math.max(1, Math.hypot(dx, dy));
+    ctx.lineTo(from.x + dx * t - dy / length * wobble, from.y + dy * t + dx / length * wobble);
+  }
+  ctx.lineTo(to.x, to.y); ctx.stroke();
+}
+function drawMeleeAttack(event) {
+  const origin = center(event.tower), target = event.targets[0];
+  if (!target) return;
+  const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
+  const windup = Math.min(1, event.age / event.impactAt), recovery = Math.max(0, 1 - (event.age - event.impactAt) / (event.duration - event.impactAt));
+  const swing = event.age < event.impactAt ? -.85 + windup * .35 : -.5 + (1 - recovery) * 1.45;
+  ctx.save(); ctx.translate(origin.x, origin.y); ctx.rotate(angle + swing); ctx.lineCap='round';
+  if (towerBranch(event.tower) === 'earth') {
+    ctx.strokeStyle='#4e3d2d';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(2,0);ctx.lineTo(43,0);ctx.stroke();ctx.fillStyle='#a27b50';roundedRect(35,-15,26,30,5);ctx.fill();
+  } else {
+    ctx.strokeStyle='#fff2b1';ctx.lineWidth=8;ctx.beginPath();ctx.arc(0,0,50,-.35,.35);ctx.stroke();ctx.strokeStyle=event.definition.color;ctx.lineWidth=3;ctx.stroke();
+  }
+  ctx.restore();
+  if (event.age >= event.impactAt) { const pulse=Math.max(0,1-(event.age-event.impactAt)*5);ctx.strokeStyle=event.definition.color;ctx.globalAlpha=pulse;ctx.lineWidth=6;ctx.beginPath();ctx.arc(target.x,target.y,18+(1-pulse)*28,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
+}
+function drawBeamAttack(event) {
+  const origin = center(event.tower), focus = event.targets[0];
+  if (!focus) return;
+  const dx=focus.x-origin.x,dy=focus.y-origin.y,length=Math.max(1,Math.hypot(dx,dy));
+  const reach=Math.max(...event.targets.map(target=>Math.hypot(target.x-origin.x,target.y-origin.y)),length)+35;
+  const end={x:origin.x+dx/length*reach,y:origin.y+dy/length*reach};
+  const alpha=Math.min(1,event.age/.08)*Math.max(0,1-event.age/event.duration);
+  ctx.save();ctx.globalAlpha=alpha;ctx.lineCap='round';
+  const lineage=towerBranch(event.tower);
+  if(lineage==='wood'||event.tower.evo==='ironwood'){
+    ctx.strokeStyle='#245d35';ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(origin.x,origin.y);ctx.quadraticCurveTo((origin.x+end.x)/2-12,(origin.y+end.y)/2+12,end.x,end.y);ctx.stroke();ctx.strokeStyle='#a8e36f';ctx.lineWidth=5;ctx.stroke();
+    for(let i=1;i<6;i++){const t=i/6,x=origin.x+(end.x-origin.x)*t,y=origin.y+(end.y-origin.y)*t;ctx.fillStyle='#d9ff9b';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-dy/length*10-dx/length*5,y+dx/length*10-dy/length*5);ctx.lineTo(x+dx/length*5,y+dy/length*5);ctx.fill()}
+  }else if(lineage==='wind'){
+    [-10,0,10].forEach(offset=>{ctx.strokeStyle=offset?'#d9ffff':event.definition.color;ctx.lineWidth=offset?3:7;ctx.beginPath();ctx.moveTo(origin.x-dy/length*offset,origin.y+dx/length*offset);ctx.quadraticCurveTo((origin.x+end.x)/2+dy/length*(offset+12),(origin.y+end.y)/2-dx/length*(offset+12),end.x-dy/length*offset,end.y+dx/length*offset);ctx.stroke()});
+  }else{
+    ctx.strokeStyle='#efffff';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(origin.x,origin.y);ctx.lineTo(end.x,end.y);ctx.stroke();ctx.strokeStyle=event.definition.color;ctx.lineWidth=6;ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawChainAttack(event) {
+  const points=[center(event.tower),...event.targets.map(target=>({x:target.x,y:target.y}))];
+  const visible=Math.min(event.targets.length,Math.max(0,Math.floor((event.age-event.impactAt)/.09)+1));
+  const lineage=towerBranch(event.tower);
+  ctx.save();ctx.lineCap='round';
+  for(let index=0;index<visible;index++){
+    const from=points[index],to=points[index+1],fade=Math.max(.2,1-(event.age-event.impactAt-index*.09)/event.duration);ctx.globalAlpha=fade;
+    if(lineage==='thunder'||event.tower.evo==='froststorm'){drawJaggedLink(from,to,'#f7f0ff',9,event.seed+index);drawJaggedLink(from,to,event.definition.color,4,event.seed+index)}
+    else{ctx.strokeStyle=lineage==='water'?'#c9f8ff':'#bba1e8';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.quadraticCurveTo((from.x+to.x)/2+12,(from.y+to.y)/2-12,to.x,to.y);ctx.stroke();ctx.strokeStyle=event.definition.color;ctx.lineWidth=3;ctx.stroke()}
+  }
+  ctx.restore();
+}
+function drawAreaAttack(event) {
+  const radius=event.definition.combat?.splashRadius||86,pre=event.age<event.impactAt;
+  ctx.save();ctx.translate(event.focusX,event.focusY);
+  if(pre){const pulse=.65+.25*Math.sin(event.age*28);ctx.globalAlpha=pulse;ctx.setLineDash([7,5]);ctx.strokeStyle=event.definition.color;ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=event.definition.color+'22';ctx.fill()}
+  else{const progress=Math.min(1,(event.age-event.impactAt)/(event.duration-event.impactAt));ctx.globalAlpha=1-progress;ctx.fillStyle=event.definition.color+'55';ctx.beginPath();ctx.arc(0,0,radius*(.35+progress*.65),0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff2a0';ctx.lineWidth=7;ctx.stroke();for(let i=0;i<10;i++){ctx.rotate(Math.PI/5);ctx.beginPath();ctx.moveTo(radius*.35,0);ctx.lineTo(radius*.8,0);ctx.stroke()}}
+  if(towerBranch(event.tower)==='yang'){ctx.globalAlpha=pre ? .35 : Math.max(0,1-(event.age-event.impactAt)*3);ctx.fillStyle='#fff2a0';ctx.fillRect(-18,-event.focusY,36,event.focusY)}
+  ctx.restore();
+}
+function drawRainAttack(event) {
+  const radius=event.definition.combat?.splashRadius||90,pre=event.age<event.impactAt;
+  ctx.save();ctx.translate(event.focusX,event.focusY);ctx.setLineDash(pre?[5,5]:[]);ctx.strokeStyle=event.definition.color;ctx.lineWidth=3;ctx.globalAlpha=pre?.8:Math.max(.15,1-event.age/event.duration);ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.stroke();ctx.fillStyle=event.definition.color+'25';ctx.fill();ctx.setLineDash([]);
+  if(!pre){for(let i=0;i<9;i++){const x=Math.sin(event.seed+i*7.3)*radius*.75,y=((event.age-event.impactAt)*240+i*31)%(radius*2)-radius;ctx.strokeStyle=i%2?'#b9ef71':'#c4a4f2';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y-22);ctx.lineTo(x,y);ctx.stroke();ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill()}}
+  ctx.restore();
+}
+function drawNovaAttack(event) {
+  const origin=center(event.tower),progress=Math.min(1,event.age/event.duration),radius=currentAttackRadius(event.definition)*Math.min(1,progress*1.35),alpha=1-progress;
+  ctx.save();ctx.globalAlpha=alpha;ctx.lineWidth=event.tower.evo==='taiji'?12:7;
+  if(event.tower.evo==='fiveSpirit'){['#c99b36','#4f9d50','#399dc4','#d95832','#9c754d'].forEach((color,index)=>{ctx.strokeStyle=color;ctx.beginPath();ctx.arc(origin.x,origin.y,Math.max(6,radius-index*9),0,Math.PI*2);ctx.stroke()})}
+  else{ctx.strokeStyle=event.definition.color;ctx.beginPath();ctx.arc(origin.x,origin.y,radius,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#f4efff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(origin.x,origin.y,radius*.72,0,Math.PI*2);ctx.stroke()}
+  ctx.restore();
+}
+function drawAttackEvents(){attackEvents.forEach(event=>{if(event.type==='melee')drawMeleeAttack(event);else if(event.type==='beam')drawBeamAttack(event);else if(event.type==='chain')drawChainAttack(event);else if(event.type==='area')drawAreaAttack(event);else if(event.type==='rain')drawRainAttack(event);else if(event.type==='nova')drawNovaAttack(event)})}
+function drawProjectile(projectile) {
+  if (projectile.delay > 0) return;
+  const definition = projectile.definition;
+  const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
+  ctx.save(); ctx.translate(projectile.x, projectile.y); ctx.rotate(angle);
+  ctx.shadowColor = definition.color; ctx.shadowBlur = 10;
+  if (projectile.style === 'blade') {
+    ctx.rotate(projectile.rotation); ctx.fillStyle = '#fff4b0'; ctx.strokeStyle = definition.color; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(0,6); ctx.lineTo(-15,0); ctx.lineTo(0,-6); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (projectile.style === 'thorn') {
+    ctx.fillStyle = '#d9ff9b'; ctx.strokeStyle = '#28753d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(18,0); ctx.lineTo(-10,5); ctx.lineTo(-5,0); ctx.lineTo(-10,-5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (projectile.style === 'bubble') {
+    ctx.globalAlpha = .85; ctx.fillStyle = '#7ee9ff'; ctx.strokeStyle = '#e8fdff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0,0,9,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-3,-3,2.5,0,Math.PI*2);ctx.fill();
+  } else if (projectile.style === 'fireball') {
+    ctx.fillStyle = '#ffcf4a'; ctx.beginPath(); ctx.arc(4,0,9,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#f24b26';ctx.beginPath();ctx.moveTo(-2,-8);ctx.lineTo(-18,0);ctx.lineTo(-2,8);ctx.closePath();ctx.fill();
+  } else if (projectile.style === 'boulder') {
+    ctx.fillStyle = '#806447'; ctx.strokeStyle = '#e6c488'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#4e3d2d';ctx.beginPath();ctx.moveTo(-6,-5);ctx.lineTo(2,1);ctx.lineTo(8,-3);ctx.stroke();
+  } else if (projectile.style === 'sun') {
+    ctx.rotate(projectile.rotation); ctx.strokeStyle='#fff0a1';ctx.lineWidth=3;for(let i=0;i<8;i++){ctx.rotate(Math.PI/4);ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(16,0);ctx.stroke()}ctx.fillStyle='#ffd13f';ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();
+  } else if (projectile.style === 'windblade') {
+    ctx.strokeStyle='#d9ffff';ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,15,-.8,.8);ctx.stroke();ctx.strokeStyle=definition.color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-18,-7);ctx.lineTo(8,0);ctx.lineTo(-18,7);ctx.stroke();
+  } else if (projectile.style === 'lightning') {
+    ctx.strokeStyle='#f6e8ff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-18,0);ctx.lineTo(-8,-6);ctx.lineTo(0,5);ctx.lineTo(8,-5);ctx.lineTo(17,0);ctx.stroke();ctx.strokeStyle=definition.color;ctx.lineWidth=2;ctx.stroke();
+  } else if (projectile.style === 'frost') {
+    ctx.strokeStyle='#e9ffff';ctx.lineWidth=3;for(let i=0;i<3;i++){ctx.rotate(Math.PI/3);ctx.beginPath();ctx.moveTo(-11,0);ctx.lineTo(11,0);ctx.stroke()}ctx.fillStyle='#79d9ee';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
+  } else if (projectile.style === 'shadow' || projectile.style === 'void') {
+    ctx.fillStyle=projectile.style==='void'?'#a971e8':'#625b9d';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#261f38';ctx.beginPath();ctx.arc(5,-3,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d5b8ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.stroke();
+  } else if (projectile.style === 'taiji') {
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();ctx.fillStyle='#222';ctx.font='bold 21px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('☯',0,1);
+  } else if (projectile.style === 'spirit') {
+    ['#c99b36','#4f9d50','#399dc4','#d95832','#9c754d'].forEach((color,index)=>{const a=projectile.rotation+index*Math.PI*2/5;ctx.fillStyle=color;ctx.beginPath();ctx.arc(Math.cos(a)*10,Math.sin(a)*10,4,0,Math.PI*2);ctx.fill()});
+  } else {
+    ctx.fillStyle='#9b693d';ctx.strokeStyle='#f2d49b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.fill();ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawProjectiles() { projectiles.forEach(drawProjectile); }
+function drawEnemyStatuses(enemy, radius) {
+  const statuses = [
+    [enemy.burn, '火', '#ff7b31'], [enemy.poison, '毒', '#79c94d'], [enemy.freeze, '冰', '#7ee9ff'],
+    [enemy.stun, '晕', '#ffe15b'], [enemy.slow, '缓', '#55cce8'], [enemy.weaken, '破', '#e1bd5e'], [enemy.taiji, '易', '#d9c4ff']
+  ].filter(([time]) => time > 0);
+  if (enemy.freeze > 0) { ctx.fillStyle='rgba(164,244,255,.28)';ctx.strokeStyle='#dffcff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(enemy.x,enemy.y,radius+5,0,Math.PI*2);ctx.fill();ctx.stroke(); }
+  if (enemy.burn > 0) { ctx.fillStyle='#ff8a32';for(let i=0;i<3;i++){const a=performance.now()/180+i*2.1;ctx.beginPath();ctx.arc(enemy.x+Math.cos(a)*radius*.7,enemy.y-radius+Math.sin(a)*4,3.5,0,Math.PI*2);ctx.fill()} }
+  if (enemy.poison > 0) { ctx.fillStyle='#a8ed65';for(let i=0;i<2;i++){const a=performance.now()/260+i*3;ctx.beginPath();ctx.arc(enemy.x+Math.cos(a)*radius,enemy.y+Math.sin(a)*radius,3,0,Math.PI*2);ctx.fill()} }
+  const width = statuses.length * 18;
+  statuses.forEach(([,label,color],index) => { const x=enemy.x-width/2+index*18+9,y=enemy.y-radius-23;ctx.fillStyle='rgba(28,39,34,.86)';ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fill();ctx.fillStyle=color;ctx.font='900 9px Noto Sans SC';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,x,y); });
+}
 function draw() {
   const field = currentBattlefield();
   ctx.clearRect(0, 0, W, H); ctx.fillStyle = field.palette.grass; ctx.fillRect(0, 0, W, H); drawGrid(); drawScenery();
   ctx.lineCap = 'round'; ctx.lineWidth = 58; ctx.strokeStyle = field.palette.roadEdge; ctx.beginPath(); path.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.stroke();
   ctx.lineWidth = 48; ctx.strokeStyle = field.palette.road; ctx.beginPath(); path.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.stroke(); drawPathDetails();
-  if (pendingDeployLevel) {
+  if (pendingDeployLevel || pendingDeployTowerIndex !== null) {
     ctx.save();
     for (let row=0;row<ROWS;row++) for(let col=0;col<COLS;col++) if(!isRoad(col,row)&&!occupied(col,row)){ctx.fillStyle='rgba(223,255,174,.2)';ctx.fillRect(col*CELL+4,row*CELL+4,CELL-8,CELL-8)}
-    if(deployHover){const valid=!isRoad(deployHover.col,deployHover.row)&&!occupied(deployHover.col,deployHover.row),p=center(deployHover);ctx.fillStyle=valid?'rgba(226,255,145,.72)':'rgba(211,65,53,.5)';ctx.fillRect(deployHover.col*CELL+4,deployHover.row*CELL+4,CELL-8,CELL-8);ctx.font='26px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🌰',p.x,p.y);ctx.fillStyle='#26382d';ctx.font='bold 10px Nunito';ctx.fillText(`Lv ${pendingDeployLevel}`,p.x,p.y+22)}
+    if(deployHover){const valid=!isRoad(deployHover.col,deployHover.row)&&!occupied(deployHover.col,deployHover.row),p=center(deployHover),standby=pendingDeployTowerIndex!==null?standbyReserve[pendingDeployTowerIndex]:null;ctx.fillStyle=valid?'rgba(226,255,145,.72)':'rgba(211,65,53,.5)';ctx.fillRect(deployHover.col*CELL+4,deployHover.row*CELL+4,CELL-8,CELL-8);ctx.font='26px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(standby?evolution[standby.evo].icon:'🌰',p.x,p.y);ctx.fillStyle='#26382d';ctx.font='bold 10px Nunito';ctx.fillText(`Lv ${standby?standby.level:pendingDeployLevel}`,p.x,p.y+22)}
     ctx.restore();
   }
   drawFusionHint();
   if(selectedTower&&towers.includes(selectedTower)){const p=drag&&drag.tower===selectedTower?{x:drag.x,y:drag.y}:center(selectedTower),z=evolution[selectedTower.evo],r=currentAttackRadius(z);ctx.save();ctx.fillStyle=z.color+'22';ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=z.color;ctx.lineWidth=3;ctx.stroke();ctx.restore()}
   if(drag){const col=Math.max(0,Math.min(COLS-1,Math.floor(drag.x/CELL))),row=Math.max(0,Math.min(ROWS-1,Math.floor(drag.y/CELL))),other=towers.find(t=>t!==drag.tower&&t.col===col&&t.row===row),valid=!isRoad(col,row)&&(!other||(other.level===drag.tower.level&&towerBranch(other)===towerBranch(drag.tower)));ctx.save();ctx.fillStyle=valid?'rgba(229,255,178,.55)':'rgba(205,66,52,.38)';ctx.strokeStyle=valid?'#f5ffb2':'#ff8a78';ctx.lineWidth=3;ctx.fillRect(col*CELL+4,row*CELL+4,CELL-8,CELL-8);ctx.strokeRect(col*CELL+5.5,row*CELL+5.5,CELL-11,CELL-11);ctx.restore()}
   towers.forEach(t => { const p=drag&&drag.tower===t?{x:drag.x,y:drag.y}:center(t), z=evolution[t.evo];ctx.save();if(drag&&drag.tower===t){ctx.shadowColor='rgba(35,60,40,.35)';ctx.shadowBlur=16;ctx.shadowOffsetY=8}ctx.fillStyle='rgba(49,89,44,.22)';ctx.beginPath();ctx.ellipse(p.x,p.y+13,27,12,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=z.color;ctx.beginPath();ctx.arc(p.x,p.y,t.evo==='base'?20:23,0,7);ctx.fill();if(t.evo!=='base'){ctx.strokeStyle='#fff9';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,18,0,7);ctx.stroke()}ctx.font=t.evo==='base'?'24px serif':'27px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(z.icon,p.x,p.y);ctx.fillStyle='#26382d';roundedRect(p.x-20,p.y+24,40,16,8);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 10px Nunito';ctx.fillText(`Lv ${t.level}`,p.x,p.y+32);ctx.restore(); });
-  enemies.forEach(e=>{const type=enemyTypes[e.type],r=e.radius||15,primary=enemyTraits[e.traits[0]]||{color:'#748079'};ctx.save();ctx.fillStyle=primary.color;ctx.beginPath();ctx.arc(e.x,e.y,r,0,7);ctx.fill();if(e.burn>0){ctx.fillStyle=`rgba(255,92,28,${.25+.18*Math.sin(performance.now()/80)})`;ctx.beginPath();ctx.arc(e.x,e.y,r+2,0,7);ctx.fill()}if(e.poison>0){ctx.strokeStyle='#75b84a';ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,r+6,0,Math.PI*2);ctx.stroke()}if(e.type!=='normal'){ctx.strokeStyle=e.type==='boss'?'#ffd05a':'#eadfff';ctx.lineWidth=3;ctx.stroke()}if(e.slow>0){ctx.strokeStyle='#77d5eb';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,r+4,0,7);ctx.stroke()}if(e.knockback>0){e.knockback-=.03;ctx.strokeStyle='#f1bf62';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,r+10,0,7);ctx.stroke()}if(e.stun>0){ctx.strokeStyle='#ffe76b';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y-22,9,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ffe76b';for(let i=0;i<4;i++){const a=performance.now()/220+i*Math.PI/2;ctx.fillRect(e.x+Math.cos(a)*14-2,e.y-22+Math.sin(a)*14-2,4,4)}}if(e===selectedEnemy){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,r+8,0,7);ctx.stroke()}ctx.fillStyle='#fff';ctx.font=`bold ${e.type==='boss'?20:14}px Nunito`;ctx.textAlign='center';ctx.fillText(e.kind,e.x,e.y+1);ctx.fillRect(e.x-r,e.y-r-9,r*2,5);ctx.fillStyle=e.type==='boss'?'#e5a52b':e.type==='elite'?'#9a72db':primary.color;ctx.fillRect(e.x-r,e.y-r-9,r*2*Math.max(0,e.hp/e.max),5);ctx.fillStyle='#3b2d2a';ctx.font='bold 10px Nunito';const traitText=e.traits.length?e.traits.map(key=>enemyTraits[key].icon).join('·'):'无';ctx.fillText(`${type.label} ${traitText}`,e.x,e.y+r+13);const markerX=e.x-(e.traits.length*7-2)/2;e.traits.forEach((key,i)=>{ctx.fillStyle=enemyTraits[key].color;ctx.fillRect(markerX+i*7,e.y+r+17,5,5)});ctx.restore()});
-  hits.forEach(p=>{ctx.save();ctx.globalAlpha=p.life;if(p.type==='text'){ctx.fillStyle=p.color;ctx.font='900 17px Nunito';ctx.textAlign='center';ctx.fillText(p.label,p.x,p.y-p.life*18)}else if(p.type==='surge'){ctx.strokeStyle='#ffbd45';ctx.lineWidth=18*p.life;ctx.beginPath();ctx.arc(W/2,H/2,(1-p.life)*650,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#fff4a8';ctx.lineWidth=5;ctx.stroke()}else if(p.type==='slash'){ctx.translate(p.originX,p.originY);ctx.rotate(p.angle);ctx.strokeStyle=p.color;ctx.lineWidth=10;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,0,p.radius,-.7,.7);ctx.stroke()}else if(p.type==='impact'){ctx.strokeStyle=p.color;ctx.lineWidth=p.evo==='earth'?10:6;ctx.beginPath();ctx.arc(p.x,p.y,Math.max(8,p.radius*(1-p.life*.35)),0,Math.PI*2);ctx.stroke()}else if(p.type==='pierce'){ctx.strokeStyle=p.color;ctx.lineWidth=p.evo==='wind'?7:5;ctx.beginPath();ctx.moveTo(p.originX,p.originY);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke()}else if(p.type==='chain'){ctx.strokeStyle=p.color;ctx.lineWidth=p.evo==='thunder'?6:4;ctx.beginPath();ctx.moveTo(p.originX,p.originY);ctx.lineTo((p.originX+p.x)/2+10,p.y-10);ctx.lineTo(p.x,p.y);ctx.stroke()}else if(p.type==='five'){['#c99b36','#4f9d50','#399dc4','#d95832','#9c754d'].forEach((color,i)=>{ctx.strokeStyle=color;ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y,22+i*10,0,Math.PI*2);ctx.stroke()})}else if(p.type==='taiji'){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x,p.y,55,0,Math.PI*2);ctx.fill();ctx.fillStyle='#222';ctx.beginPath();ctx.arc(p.x,p.y,55,Math.PI/2,Math.PI*1.5);ctx.fill();ctx.font='bold 40px serif';ctx.textAlign='center';ctx.fillText('☯',p.x,p.y+3)}else{ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4)}if(p.glyph&&p.type!=='taiji'){const gx=p.type==='slash'||p.evo==='base'?p.originX:p.x, gy=p.type==='slash'||p.evo==='base'?p.originY-28:p.y-25;ctx.fillStyle=p.color;ctx.font='bold 25px serif';ctx.textAlign='center';ctx.fillText(p.glyph,gx,gy)}ctx.restore()});
+  enemies.forEach(e=>{const type=enemyTypes[e.type],r=e.radius||15,primary=enemyTraits[e.traits[0]]||{color:'#748079'};ctx.save();ctx.fillStyle=primary.color;ctx.beginPath();ctx.arc(e.x,e.y,r,0,7);ctx.fill();if(e.type!=='normal'){ctx.strokeStyle=e.type==='boss'?'#ffd05a':'#eadfff';ctx.lineWidth=3;ctx.stroke()}if(e.knockback>0){ctx.strokeStyle='#f1bf62';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(e.x+r+6,e.y-8);ctx.lineTo(e.x+r+22,e.y-8);ctx.moveTo(e.x+r+8,e.y);ctx.lineTo(e.x+r+28,e.y);ctx.moveTo(e.x+r+6,e.y+8);ctx.lineTo(e.x+r+22,e.y+8);ctx.stroke()}if(e.stun>0){ctx.strokeStyle='#ffe76b';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y-r-10,9,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ffe76b';for(let i=0;i<4;i++){const a=performance.now()/220+i*Math.PI/2;ctx.fillRect(e.x+Math.cos(a)*14-2,e.y-r-10+Math.sin(a)*14-2,4,4)}}if(e===selectedEnemy){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,r+8,0,7);ctx.stroke()}ctx.fillStyle='#fff';ctx.font=`bold ${e.type==='boss'?20:14}px Nunito`;ctx.textAlign='center';ctx.fillText(e.kind,e.x,e.y+1);ctx.fillRect(e.x-r,e.y-r-9,r*2,5);ctx.fillStyle=e.type==='boss'?'#e5a52b':e.type==='elite'?'#9a72db':primary.color;ctx.fillRect(e.x-r,e.y-r-9,r*2*Math.max(0,e.hp/e.max),5);ctx.fillStyle='#3b2d2a';ctx.font='bold 10px Nunito';const traitText=e.traits.length?e.traits.map(key=>enemyTraits[key].icon).join('·'):'无';ctx.fillText(`${type.label} ${traitText}`,e.x,e.y+r+13);const markerX=e.x-(e.traits.length*7-2)/2;e.traits.forEach((key,i)=>{ctx.fillStyle=enemyTraits[key].color;ctx.fillRect(markerX+i*7,e.y+r+17,5,5)});drawEnemyStatuses(e,r);ctx.restore()});
+  drawAttackEvents();
+  drawProjectiles();
+  hits.forEach(p=>{ctx.save();ctx.globalAlpha=p.life;if(p.type==='text'||p.type==='statusText'){ctx.fillStyle=p.color;ctx.strokeStyle='rgba(25,35,30,.8)';ctx.lineWidth=3;ctx.font=p.type==='statusText'?'900 13px Noto Sans SC':'900 17px Nunito';ctx.textAlign='center';ctx.strokeText(p.label,p.x,p.y-p.life*18);ctx.fillText(p.label,p.x,p.y-p.life*18)}else if(p.type==='surge'){ctx.strokeStyle='#ffbd45';ctx.lineWidth=18*p.life;ctx.beginPath();ctx.arc(W/2,H/2,(1-p.life)*650,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#fff4a8';ctx.lineWidth=5;ctx.stroke()}else{ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4)}ctx.restore()});
   if(screenFlash>0){ctx.fillStyle=`rgba(255,226,116,${screenFlash*.38})`;ctx.fillRect(0,0,W,H)}
 }
 function unleashSurge() {
@@ -512,24 +810,70 @@ function update(dt) {
     }
     if (spawned >= waveSize() && enemies.length === 0) completeWave();
   }
-  enemies.forEach(e=>{if(e.slow>0)e.slow-=dt;if(e.stun>0)e.stun-=dt;if(e.taiji>0)e.taiji-=dt;if(e.burn>0){e.burn-=dt;e.hp-=8*dt;if(e.hp<=0&&!e.dead&&e.burnSource){damageTarget(e.burnSource,e,{...evolution[e.burnSource.evo],damage:0})}}if(e.poison>0){e.poison-=dt;e.hp-=5*dt;if(e.hp<=0&&!e.dead&&e.poisonSource){damageTarget(e.poisonSource,e,{...evolution[e.poisonSource.evo],damage:0})}}if(e.weaken>0)e.weaken-=dt;if(e.regen>0)e.hp=Math.min(e.max,e.hp+e.regen*dt);const rage=e.enraged&&e.hp/e.max<.5?1.45:1;e.dist+=e.stun>0?0:e.speed*rage*(e.slow>0?.4:1)*dt;Object.assign(e,pointAt(e.dist));if(e.dist>=pathLength){e.dead=true;lives-=enemyTypes[e.type].lifeCost;ui()}});
+  enemies.forEach(enemy => {
+    ['slow','stun','taiji','weaken','silence','freeze'].forEach(status => { if (enemy[status] > 0) enemy[status] = Math.max(0, enemy[status] - dt); });
+    if (enemy.knockback > 0) enemy.knockback = Math.max(0, enemy.knockback - dt * 1.5);
+    if (enemy.burn > 0) {
+      enemy.burn -= dt; enemy.hp -= 11 * dt;
+      if (enemy.hp <= 0 && !enemy.dead && enemy.burnSource) damageTarget(enemy.burnSource, enemy, { ...evolution[enemy.burnSource.evo], damage: 0 });
+    }
+    if (enemy.poison > 0) {
+      enemy.poison -= dt; enemy.hp -= 8 * dt;
+      if (enemy.hp <= 0 && !enemy.dead && enemy.poisonSource) damageTarget(enemy.poisonSource, enemy, { ...evolution[enemy.poisonSource.evo], damage: 0 });
+    }
+    if (enemy.regen > 0) enemy.hp = Math.min(enemy.max, enemy.hp + enemy.regen * dt);
+    const rage = enemy.enraged && enemy.hp / enemy.max < .5 ? 1.45 : 1;
+    const controlScale = enemy.stun > 0 ? 0 : enemy.freeze > 0 ? .22 : enemy.slow > 0 ? .48 : 1;
+    enemy.dist += enemy.speed * rage * controlScale * dt;
+    Object.assign(enemy, pointAt(enemy.dist));
+    if (enemy.dist >= pathLength) { enemy.dead = true; lives -= enemyTypes[enemy.type].lifeCost; ui(); }
+  });
   maintainEnemySpacing();
-  towers.forEach(t=>{const p=center(t),z=evolution[t.evo],range=currentAttackRadius(z);t.cool-=dt;if(t.cool<=0){let targets=enemies.filter(e=>!e.dead&&Math.hypot(e.x-p.x,e.y-p.y)<range).sort((a,b)=>b.dist-a.dist);if(targets.length){if(z.attackMode==='single')targets=[targets[0]];else if(z.attackMode==='chain')targets=targets.slice(0,3);else if(z.attackMode==='pierce')targets=targets.slice(0,5);else if(z.attackMode==='splash'){const hit=targets[0];targets=targets.filter(e=>Math.hypot(e.x-hit.x,e.y-hit.y)<72).slice(0,6)}else if(z.attackMode==='omni')targets=targets.slice(0,t.evo==='taiji'?16:12);t.cool=z.rate;targets.forEach(target=>damageTarget(t,target,z));if(z.attackMode==='chain'||z.attackMode==='pierce')targets.forEach(target=>attackEffect(t,target,z));else attackEffect(t,targets[0],z);ui()}}});
-  enemies=enemies.filter(e=>!e.dead&&e.hp>0);hits.forEach(p=>{p.life-=dt*(p.type==='slash'?3.4:1);if(!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt}});hits=hits.filter(p=>p.life>0);
+  updateAttackEvents(dt);
+  updateProjectiles(dt);
+  const combatContext = towerCombatContext();
+  towers.forEach(tower => { if (tower.updateCombat(dt, combatContext).length) ui(); });
+  enemies=enemies.filter(e=>!e.dead&&e.hp>0);hits.forEach(p=>{p.life-=dt;if(!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt}});hits=hits.filter(p=>p.life>0);
   if(lives<=0&&running){running=false;started=false;$('message').textContent='森林失守了，再试一次吧！';$('waveBtn').disabled=false;$('waveBtn').textContent='重新开始'}
 }
 function loop(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;if(!paused)update(dt*speed);try{draw()}catch(error){console.error('地图绘制已切换至兼容模式',error);drawFallback()}requestAnimationFrame(loop)}
 function pointerCell(e){const r=canvas.getBoundingClientRect();return{col:Math.max(0,Math.min(COLS-1,Math.floor((e.clientX-r.left)*W/r.width/CELL))),row:Math.max(0,Math.min(ROWS-1,Math.floor((e.clientY-r.top)*H/r.height/CELL)))}}
 function pointerPosition(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-canvas.addEventListener('pointerdown',e=>{const c=pointerCell(e),p=pointerPosition(e);if(pendingDeployLevel){deployReserve(c.col,c.row);return}const tower=towers.find(t=>t.col===c.col&&t.row===c.row);if(tower){selectedEnemy=null;selectedTower=tower;drag={tower,x:p.x,y:p.y,origin:{col:tower.col,row:tower.row}};canvas.setPointerCapture(e.pointerId);ui();return}const enemy=[...enemies].reverse().find(item=>Math.hypot(item.x-p.x,item.y-p.y)<=item.radius+7);if(enemy){selectedEnemy=enemy;selectedTower=null;ui()}});
-canvas.addEventListener('pointermove',e=>{if(pendingDeployLevel){deployHover=pointerCell(e);return}if(!drag)return;const r=canvas.getBoundingClientRect();drag.x=(e.clientX-r.left)*W/r.width;drag.y=(e.clientY-r.top)*H/r.height});
+canvas.addEventListener('pointerdown',e=>{const c=pointerCell(e),p=pointerPosition(e);if(pendingDeployLevel||pendingDeployTowerIndex!==null){deployReserve(c.col,c.row);return}const tower=towers.find(t=>t.col===c.col&&t.row===c.row);if(tower){selectedEnemy=null;selectedTower=tower;drag={tower,x:p.x,y:p.y,origin:{col:tower.col,row:tower.row}};canvas.setPointerCapture(e.pointerId);ui();return}const enemy=[...enemies].reverse().find(item=>Math.hypot(item.x-p.x,item.y-p.y)<=item.radius+7);if(enemy){selectedEnemy=enemy;selectedTower=null;ui()}});
+canvas.addEventListener('pointermove',e=>{if(pendingDeployLevel||pendingDeployTowerIndex!==null){deployHover=pointerCell(e);return}if(!drag)return;const r=canvas.getBoundingClientRect();drag.x=(e.clientX-r.left)*W/r.width;drag.y=(e.clientY-r.top)*H/r.height});
 canvas.addEventListener('pointerleave',()=>{deployHover=null});
-canvas.addEventListener('contextmenu',event=>{if(!pendingDeployLevel)return;event.preventDefault();pendingDeployLevel=null;deployHover=null;$('message').textContent='已取消灵种部署。';ui()});
-canvas.addEventListener('pointerup',()=>{if(!drag)return;const tower=drag.tower,c=Math.max(0,Math.min(COLS-1,Math.floor(drag.x/CELL))),r=Math.max(0,Math.min(ROWS-1,Math.floor(drag.y/CELL)));tower.col=c;tower.row=r;const other=towers.find(t=>t!==tower&&t.col===c&&t.row===r);const sameBranch=other&&towerBranch(other)===towerBranch(tower);if(isRoad(c,r)){tower.col=drag.origin.col;tower.row=drag.origin.row;$('message').textContent='道路无法部署守卫。'}else if(other&&other.level===tower.level&&sameBranch&&tower.level<MAX_LEVEL){other.level++;towers=towers.filter(t=>t!==tower);selectedTower=other;if(other.level===5&&other.evo==='base'&&!other.evolutionPath){pendingEvolution=other;pendingEvolutionStage='primary';openEvolution('primary')}else if(other.level===10&&other.evoTier===1){pendingEvolution=other;pendingEvolutionStage='branch';openEvolution('branch')}else if(other.level===MAX_LEVEL){finalWave=true;$('message').textContent=running?`${evolution[other.evo].ultimate}诞生，当前波成为决胜波！`:`${evolution[other.evo].ultimate}诞生，下一波成为决胜波！`}else $('message').textContent=`合成成功！${evolution[other.evo].name} Lv.${other.level}`;}else if(other){tower.col=drag.origin.col;tower.row=drag.origin.row;$('message').textContent=other.level!==tower.level?'只有同等级炮塔才能合成。':'只有相同进化路线的炮塔才能合并。'}delete drag.origin;drag=null;tryFiveFusion();tryTaijiFusion();tryHiddenFusions();ui()});
+canvas.addEventListener('contextmenu',event=>{if(!pendingDeployLevel&&pendingDeployTowerIndex===null)return;event.preventDefault();pendingDeployLevel=null;pendingDeployTowerIndex=null;deployHover=null;$('message').textContent='已取消部署。';ui()});
+canvas.addEventListener('pointerup', () => {
+  if (!drag) return;
+  const tower = drag.tower;
+  const col = Math.max(0, Math.min(COLS - 1, Math.floor(drag.x / CELL)));
+  const row = Math.max(0, Math.min(ROWS - 1, Math.floor(drag.y / CELL)));
+  tower.relocate(col, row);
+  const other = towers.find(item => item !== tower && item.col === col && item.row === row);
+  const mergeRules = { branchResolver: key => branchOf[key] || key, maxLevel: MAX_LEVEL };
+  if (isRoad(col, row)) {
+    tower.relocate(drag.origin.col, drag.origin.row);
+    $('message').textContent = '道路无法部署守卫。';
+  } else if (other?.absorb(tower, mergeRules)) {
+    towers = towers.filter(item => item !== tower); selectedTower = other;
+    if (other.level === 5 && other.evo === 'base' && !other.evolutionPath) {
+      pendingEvolution = other; pendingEvolutionStage = 'primary'; openEvolution('primary');
+    } else if (other.level === 10 && other.evoTier === 1) {
+      pendingEvolution = other; pendingEvolutionStage = 'branch'; openEvolution('branch');
+    } else if (other.level === MAX_LEVEL) {
+      finalWave = true;
+      $('message').textContent = running ? `${evolution[other.evo].ultimate}诞生，当前波成为决胜波！` : `${evolution[other.evo].ultimate}诞生，下一波成为决胜波！`;
+    } else $('message').textContent = `合成成功！${evolution[other.evo].name} Lv.${other.level}`;
+  } else if (other) {
+    tower.relocate(drag.origin.col, drag.origin.row);
+    $('message').textContent = other.level !== tower.level ? '只有同等级炮塔才能合成。' : '只有相同进化路线的炮塔才能合并。';
+  }
+  delete drag.origin; drag = null; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui();
+});
 canvas.addEventListener('pointercancel',()=>{if(!drag)return;drag.tower.col=drag.origin.col;drag.tower.row=drag.origin.row;drag=null;ui()});
 function openEvolution(stage = 'branch') { const primary = stage === 'primary'; const choices = primary ? pickRoutes() : pickBranches(pendingEvolution?.evolutionPath); const dialog = document.querySelector('.evo-dialog'); const modal = $('evoModal'); const hasRare = choices.some(key => evolution[key].rare); if (!modal.classList.contains('show')) evolutionWasPaused = paused; paused = true; $('pauseBtn').textContent = '▶'; $('evoTitle').textContent = primary ? '选择进化主路线' : `选择${evolution[pendingEvolution?.evolutionPath]?.name || ''}分支`; $('rareBanner').hidden = !hasRare; dialog.classList.toggle('has-rare', hasRare); $('evoChoices').innerHTML = choices.map(key => { const route = evolution[key]; const rarity = primary ? (route.rare ? '稀有主路线' : '五行主路线') : 'Lv.10 专属分支'; const stats = `伤害 ${route.damage} / 等级 · 射程 ${route.rangeCells} 格 · 攻速 ${(1 / route.rate).toFixed(1)}/秒`; return `<button class="${route.rare ? 'rare-route' : ''}" data-route="${key}" data-route-key="${key}">${route.rare ? '<span class="rare-badge">稀有</span>' : ''}<strong>${route.icon} ${route.name}</strong><small><b>${rarity}</b><br>${route.desc}</small><span class="evo-stats">${stats}</span><span class="evo-effect">${attackModeNames[route.attackMode]} · ${effectNames[route.effect] || '无附加效果'}</span><small>${primary ? 'Lv.10 解锁专属分支' : `Lv.20：${route.ultimate}`}</small></button>`; }).join(''); document.querySelectorAll('[data-route]').forEach(button => button.onclick = () => chooseEvolution(button.dataset.route)); modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
 function closeEvolution(){ $('evoModal').classList.remove('show');$('evoModal').setAttribute('aria-hidden','true');document.body.classList.remove('modal-open');paused=evolutionWasPaused;$('pauseBtn').textContent=paused?'▶':'Ⅱ'; }
-function chooseEvolution(route){ const t = pendingEvolution; if (!t) return; audioBus.evolve(); discoveredEvolutions.add(route); if (pendingEvolutionStage === 'primary') { t.evolutionPath = route; t.evo = route; t.evoTier = 1; if (t.level >= 10) { pendingEvolutionStage = 'branch'; openEvolution('branch'); return; } pendingEvolution = null; pendingEvolutionStage = null; closeEvolution(); $('message').textContent = `已进化为${evolution[route].name}，Lv.10 时解锁该路线的专属分支。`; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui(); return; } t.evo = route; t.evoTier = 2; pendingEvolution = null; pendingEvolutionStage = null; closeEvolution(); $('message').textContent = `分支已确定：${evolution[t.evo].name}`; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui(); }
+function chooseEvolution(route){ const t = pendingEvolution; if (!t) return; audioBus.evolve(); discoveredEvolutions.add(route); if (pendingEvolutionStage === 'primary') { t.evolveTo(route, { tier: 1, path: route }); if (t.level >= 10) { pendingEvolutionStage = 'branch'; openEvolution('branch'); return; } pendingEvolution = null; pendingEvolutionStage = null; closeEvolution(); $('message').textContent = `已进化为${evolution[route].name}，Lv.10 时解锁该路线的专属分支。`; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui(); return; } t.evolveTo(route, { tier: 2, path: t.evolutionPath }); pendingEvolution = null; pendingEvolutionStage = null; closeEvolution(); $('message').textContent = `分支已确定：${evolution[t.evo].name}`; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui(); }
 function tryHiddenFusions() {
   for (const recipe of hiddenFusions) {
     for (let row = 1; row < ROWS - 1; row++) for (let col = 1; col < COLS - 1; col++) {
@@ -594,7 +938,9 @@ function autoMerge() {
     }
     if (!pair) break;
     const [keeper, consumed] = pair;
-    keeper.level++; towers = towers.filter(tower => tower !== consumed); selectedTower = keeper; merged++; audioBus.merge();
+    const mergeRules = { branchResolver: key => branchOf[key] || key, maxLevel: MAX_LEVEL };
+    if (!keeper.absorb(consumed, mergeRules)) break;
+    towers = towers.filter(tower => tower !== consumed); selectedTower = keeper; merged++; audioBus.merge();
     if (keeper.level === 5 && keeper.evo === 'base' && !keeper.evolutionPath) {
       pendingEvolution = keeper; pendingEvolutionStage = 'primary'; ui(); openEvolution('primary');
       $('message').textContent = `已完成 ${merged} 次合成，请从三张主路线卡牌中选择。`;
@@ -619,5 +965,5 @@ $('recallBtn').onclick=recallSelectedTower;
 $('mergeBtn').onclick=autoMerge;
 $('surgeBtn').onclick=unleashSurge;
 $('soundBtn').onclick=()=>{runtime.soundEnabled=!runtime.soundEnabled;$('soundBtn').textContent=runtime.soundEnabled?'🔊':'🔇';if(runtime.soundEnabled)audioBus.play(520,.08,'sine',.03)};
-window.addEventListener('keydown',event=>{if(event.key==='Escape'&&pendingDeployLevel){pendingDeployLevel=null;deployHover=null;$('message').textContent='已取消灵种部署。';ui();return}if(event.code==='Space'&&!event.repeat&&!pendingEvolution){event.preventDefault();unleashSurge()}if(event.key.toLowerCase()==='p'&&!event.repeat)$('pauseBtn').click()});
+window.addEventListener('keydown',event=>{if(event.key==='Escape'&&(pendingDeployLevel||pendingDeployTowerIndex!==null)){pendingDeployLevel=null;pendingDeployTowerIndex=null;deployHover=null;$('message').textContent='已取消部署。';ui();return}if(event.code==='Space'&&!event.repeat&&!pendingEvolution){event.preventDefault();unleashSurge()}if(event.key.toLowerCase()==='p'&&!event.repeat)$('pauseBtn').click()});
 resetGame();ui();requestAnimationFrame(loop);
