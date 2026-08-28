@@ -41,6 +41,8 @@ const sandbox = {
   Math, Map, Set, Object, Array
 };
 vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(path.join(root, 'enemy-system.js'), 'utf8'), sandbox, { filename: 'enemy-system.js' });
+vm.runInContext(fs.readFileSync(path.join(root, 'evolution-system.js'), 'utf8'), sandbox, { filename: 'evolution-system.js' });
 vm.runInContext(fs.readFileSync(path.join(root, 'tower-system.js'), 'utf8'), sandbox, { filename: 'tower-system.js' });
 vm.runInContext(`${fs.readFileSync(path.join(root, 'game.js'), 'utf8')}
   globalThis.__smoke = {
@@ -52,6 +54,8 @@ vm.runInContext(`${fs.readFileSync(path.join(root, 'game.js'), 'utf8')}
   };
   startWave(); update(1.1);
   globalThis.__smoke.spawned = spawned;
+  globalThis.__smoke.enemyClass = enemies[0].constructor.name;
+  globalThis.__smoke.enemyArchetype = enemies[0].archetype;
   globalThis.__smoke.waveRunning = running;
   const projectileEnemy = { x: 230, y: 390, dist: 100, hp: 10000, max: 10000, dead: false, armor: 0, resist: {}, radius: 14, type: 'normal' };
   projectiles = [];
@@ -105,6 +109,30 @@ vm.runInContext(`${fs.readFileSync(path.join(root, 'game.js'), 'utf8')}
   globalThis.__smoke.evolvedTowerStored = standbyReserve.length === 1 && standbyReserve[0].evo === 'fire' && standbyReserve[0].level === 8;
   beginDeployStandby(0); deployReserve(3, 0);
   globalThis.__smoke.evolvedTowerRestored = towers.some(tower => tower.evo === 'fire' && tower.level === 8) && standbyReserve.length === 0;
+
+  reserve = { 1: 32 };
+  compactReserve();
+  globalThis.__smoke.reserveStopsAtEvolution = reserve[5] === 2 && !reserve[6];
+
+  towers = [towerFactory.create({ col: 0, row: 0, level: 2 })];
+  reserve = { 2: 1 }; pendingDeployLevel = 2; pendingDeployTowerIndex = null;
+  deployReserve(0, 0);
+  globalThis.__smoke.reserveInjectMerge = towers.length === 1 && towers[0].level === 3 && !reserve[2];
+
+  const waterBranchOne = towerFactory.create({ col: 0, row: 1, level: 10, evo: 'waterBranch1', evoTier: 2, evolutionPath: 'water' });
+  const waterBranchTwo = towerFactory.create({ col: 1, row: 1, level: 10, evo: 'waterBranch2', evoTier: 2, evolutionPath: 'water' });
+  globalThis.__smoke.differentBranchesDoNotMerge = !canMergeTowers(waterBranchOne, waterBranchTwo);
+
+  towers = [towerFactory.create({ col: 0, row: 0, level: 2 }), towerFactory.create({ col: 1, row: 0, level: 2 })];
+  pendingEvolution = null; autoMerge();
+  const mergedOnce = towers.length === 1 && towers[0].level === 3;
+  undoAutoMerge();
+  globalThis.__smoke.autoMergeUndo = mergedOnce && towers.length === 2 && towers.every(tower => tower.level === 2);
+
+  towers = [towerFactory.create({ col: 0, row: 0, level: 6 }), towerFactory.create({ col: 1, row: 0, level: 3, evo: 'fire', evoTier: 1, evolutionPath: 'fire' })];
+  selectedTower = towers[0]; cultivationTarget = selectedTower;
+  sacrificeTower(selectedTower, towers[1]);
+  globalThis.__smoke.anyTowerSacrifice = towers.length === 1 && selectedTower.growth === 5;
 `, sandbox, { filename: 'game.js' });
 
 assert.equal(sandbox.__smoke.towerClass, 'Tower');
@@ -113,6 +141,8 @@ assert.equal(sandbox.__smoke.catalogSize, 79);
 assert.match(sandbox.__smoke.selectedName, /橡果守卫/);
 assert.equal(sandbox.__smoke.waveBefore, 1);
 assert.equal(sandbox.__smoke.spawned, 1);
+assert.equal(sandbox.__smoke.enemyClass, 'Enemy');
+assert.equal(sandbox.__smoke.enemyArchetype, 'mossling');
 assert.equal(sandbox.__smoke.waveRunning, true);
 assert.equal(sandbox.__smoke.hpDuringFlight, sandbox.__smoke.hpBeforeFlight);
 assert.ok(sandbox.__smoke.hpAfterImpact < sandbox.__smoke.hpBeforeFlight);
@@ -126,4 +156,9 @@ assert.equal(sandbox.__smoke.chainSecondLink, true);
 assert.equal(sandbox.__smoke.nonProjectileTypes.join(','), 'area,beam,chain,melee,nova,rain');
 assert.equal(sandbox.__smoke.evolvedTowerStored, true);
 assert.equal(sandbox.__smoke.evolvedTowerRestored, true);
+assert.equal(sandbox.__smoke.reserveStopsAtEvolution, true);
+assert.equal(sandbox.__smoke.reserveInjectMerge, true);
+assert.equal(sandbox.__smoke.differentBranchesDoNotMerge, true);
+assert.equal(sandbox.__smoke.autoMergeUndo, true);
+assert.equal(sandbox.__smoke.anyTowerSacrifice, true);
 console.log('game-smoke: attack variants and evolved-tower standby storage passed');

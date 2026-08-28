@@ -43,6 +43,26 @@ function testMergeRulesAndEvolution() {
   left.evolveTo('water', { tier: 1, path: 'water' });
   assert.deepEqual([left.evo, left.evoTier, left.evolutionPath], ['water', 1, 'water']);
   assert.equal(left.canMergeWith(factory.create({ col: 2, row: 0, level: 5, evo: 'fire' }), rules), false);
+  const branchOne = factory.create({ col: 2, row: 0, level: 10, evo: 'water', evoTier: 2, evolutionPath: 'water' });
+  const branchTwo = factory.create({ col: 3, row: 0, level: 10, evo: 'fire', evoTier: 2, evolutionPath: 'water' });
+  const exactRules = { identityResolver: tower => tower.evo, maxLevel: 20 };
+  assert.equal(branchOne.canMergeWith(branchTwo, exactRules), false);
+  const accelerated = factory.create({ col: 4, row: 0, level: 10 });
+  const feeder = factory.create({ col: 5, row: 0, level: 10 });
+  assert.equal(accelerated.absorb(feeder, { identityResolver: tower => tower.evo, maxLevel: 20, mergeGain: level => level < 15 ? 2 : 3 }), true);
+  assert.equal(accelerated.level, 12);
+  const cultivator = factory.create({ col: 6, row: 0, level: 6 });
+  const lowSeed = factory.create({ col: 7, row: 0, level: 2 });
+  assert.equal(cultivator.canMergeWith(lowSeed, { identityResolver: tower => tower.evo, maxLevel: 20, cultivation: true }), true);
+  assert.equal(cultivator.absorb(lowSeed, { identityResolver: tower => tower.evo, maxLevel: 20, cultivation: true, growthThreshold: level => level }), true);
+  assert.equal(cultivator.level, 6);
+  assert.equal(cultivator.growth, 2);
+  const resonant = factory.create({ col: 8, row: 0, level: 6 });
+  const twin = factory.create({ col: 9, row: 0, level: 6 });
+  assert.equal(resonant.absorb(twin, { identityResolver: tower => tower.evo, maxLevel: 20, cultivation: true, growthThreshold: level => level, resonanceBonus: level => Math.ceil(level * .5) }), true);
+  assert.equal(resonant.level, 7);
+  assert.equal(resonant.lastAbsorbKind, 'resonance');
+  assert.equal(factory.create({ col: 10, row: 0, level: 4, evo: 'water', evoTier: 1 }).sacrificeValue(), 7);
 }
 
 function testAttackStrategies() {

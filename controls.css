@@ -1,9 +1,14 @@
 .game-controls { display: flex; gap: 7px; }
 .control-btn { width: 39px; height: 39px; border: 1px solid #dce8d6; border-radius: 10px; background: #fffdf7; color: #526a55; font: 900 13px 'Nunito', 'Noto Sans SC', sans-serif; cursor: pointer; }
 .control-btn:hover { border-color: #f2ad62; background: #fff4df; }
+.control-btn:disabled { cursor: not-allowed; opacity: .38; }
+.undo-btn:not(:disabled) { border-color: #83a985; background: #edf6e9; color: #3e7145; }
 .speed-btn { width: 45px; }
 .merge-btn { height: 39px; padding: 0 12px; border: 1px solid #e6a052; border-radius: 10px; background: #fff4df; color: #b96320; font: 900 12px 'Nunito','Noto Sans SC',sans-serif; cursor: pointer; white-space: nowrap; }
 .merge-btn:hover { background: #ffe7be; border-color: #dd812d; }
+.cultivate-btn { width: 100%; margin-top: 6px; padding: 7px; border: 1px solid #c7a052; border-radius: 4px; background: #fff6dc; color: #8c631d; font: 800 9px inherit; cursor: pointer; }
+.cultivate-btn:hover:not(:disabled), .cultivate-btn.active { border-color: #b5791d; background: #ffe8a9; }
+.cultivate-btn:disabled { cursor: not-allowed; opacity: .4; }
 .surge-btn { position: relative; isolation: isolate; min-width: 142px; height: 44px; overflow: hidden; display: flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid #e5b353; border-radius: 8px; background: #302f29; color: #fff4cc; cursor: pointer; text-align: left; }
 .surge-btn > * { position: relative; z-index: 1; }
 .surge-btn i { position: absolute; z-index: 0; inset: 0 auto 0 0; width: 0; background: #c87824; opacity: .68; transition: width 180ms ease; }

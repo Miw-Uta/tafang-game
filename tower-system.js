@@ -120,7 +120,7 @@
   }
 
   class Tower {
-    constructor({ col, row, level = 1, evo = 'base', evoTier = 0, cool = 0, evolutionPath = null } = {}) {
+    constructor({ col, row, level = 1, evo = 'base', evoTier = 0, cool = 0, evolutionPath = null, growth = 0 } = {}) {
       if (!Number.isInteger(col) || !Number.isInteger(row)) throw new Error('Tower requires integer grid coordinates');
       this.col = col;
       this.row = row;
@@ -129,6 +129,7 @@
       this.evoTier = evoTier;
       this.cool = cool;
       this.evolutionPath = evolutionPath;
+      this.growth = Math.max(0, Number(growth) || 0);
     }
 
     get definitionKey() { return this.evo; }
@@ -137,16 +138,36 @@
       return this.evo === 'base' ? (this.evolutionPath || 'base') : branchResolver(this.evo);
     }
 
-    canMergeWith(other, { branchResolver, maxLevel }) {
-      return other instanceof Tower && other !== this && this.level === other.level &&
-        this.level < maxLevel && this.branch(branchResolver) === other.branch(branchResolver);
+    canMergeWith(other, { branchResolver = key => key, identityResolver = null, maxLevel, cultivation = false }) {
+      const identityOf = identityResolver || (tower => tower.branch(branchResolver));
+      return other instanceof Tower && other !== this && this.level < maxLevel && identityOf(this) === identityOf(other) &&
+        (cultivation ? other.level <= this.level : this.level === other.level);
     }
 
     absorb(other, rules) {
       if (!this.canMergeWith(other, rules)) return false;
-      this.level += 1;
+      if (rules.cultivation) {
+        const sameLevel = this.level === other.level;
+        const resonanceBonus = sameLevel ? Math.max(0, Number(rules.resonanceBonus?.(this.level, this) || 0)) : 0;
+        this.growth += Math.max(1, other.level) + resonanceBonus;
+        this.lastAbsorbKind = sameLevel && resonanceBonus > 0 ? 'resonance' : 'cultivation';
+        const threshold = rules.growthThreshold || (level => Math.max(1, level));
+        while (this.level < (rules.maxLevel || Infinity) && this.growth >= threshold(this.level, this)) {
+          this.growth -= threshold(this.level, this);
+          this.level += 1;
+        }
+      } else {
+        const gain = Math.max(1, Number(rules.mergeGain?.(this.level, this, other) || 1));
+        this.level = Math.min(rules.maxLevel || this.level + gain, this.level + gain);
+      }
       this.cool = 0;
       return true;
+    }
+
+    sacrificeValue(rules = {}) {
+      const tierMultiplier = 1 + Math.max(0, this.evoTier || 0) * (rules.tierBonus || .5);
+      const fusionMultiplier = this.evo === 'base' ? 1 : (rules.evolvedMultiplier || 1.25);
+      return Math.max(1, Math.floor(this.level * tierMultiplier * fusionMultiplier));
     }
 
     evolveTo(definitionKey, { tier = this.evoTier + 1, path = this.evolutionPath } = {}) {
@@ -185,6 +206,7 @@
       return {
         col: this.col, row: this.row, level: this.level, evo: this.evo,
         evoTier: this.evoTier, cool: this.cool, evolutionPath: this.evolutionPath
+        , growth: this.growth
       };
     }
   }
