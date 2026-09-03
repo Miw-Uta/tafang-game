@@ -5,6 +5,60 @@
 })(typeof globalThis !== 'undefined' ? globalThis : window, function createContentDomain() {
   const freezeArray = value => Object.freeze([...(value || [])]);
   const freezeObject = value => Object.freeze({ ...(value || {}) });
+  function smoothRoute(points, steps = 8) {
+    if (points.length < 3) return points.map(point => [...point]);
+    const result = [[...points[0]]];
+    for (let index = 0; index < points.length - 1; index++) {
+      const p0 = points[Math.max(0, index - 1)], p1 = points[index], p2 = points[index + 1], p3 = points[Math.min(points.length - 1, index + 2)];
+      for (let step = 1; step <= steps; step++) {
+        const t = step / steps, t2 = t * t, t3 = t2 * t;
+        result.push([
+          .5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2*p0[0] - 5*p1[0] + 4*p2[0] - p3[0]) * t2 + (-p0[0] + 3*p1[0] - 3*p2[0] + p3[0]) * t3),
+          .5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2*p0[1] - 5*p1[1] + 4*p2[1] - p3[1]) * t2 + (-p0[1] + 3*p1[1] - 3*p2[1] + p3[1]) * t3)
+        ]);
+      }
+    }
+    return result;
+  }
+  function roundOrthogonalRoute(points, radius = 22, steps = 5) {
+    if (points.length < 3) return points.map(point => [...point]);
+    const result = [[...points[0]]];
+    for (let index = 1; index < points.length - 1; index++) {
+      const previous = points[index - 1], corner = points[index], next = points[index + 1];
+      const incomingLength = Math.hypot(corner[0] - previous[0], corner[1] - previous[1]);
+      const outgoingLength = Math.hypot(next[0] - corner[0], next[1] - corner[1]);
+      const turnRadius = Math.min(radius, incomingLength / 2, outgoingLength / 2);
+      const incoming = [(corner[0] - previous[0]) / incomingLength, (corner[1] - previous[1]) / incomingLength];
+      const outgoing = [(next[0] - corner[0]) / outgoingLength, (next[1] - corner[1]) / outgoingLength];
+      const entry = [corner[0] - incoming[0] * turnRadius, corner[1] - incoming[1] * turnRadius];
+      const exit = [corner[0] + outgoing[0] * turnRadius, corner[1] + outgoing[1] * turnRadius];
+      result.push(entry);
+      for (let step = 1; step <= steps; step++) {
+        const progress = step / steps, inverse = 1 - progress;
+        result.push([
+          inverse * inverse * entry[0] + 2 * inverse * progress * corner[0] + progress * progress * exit[0],
+          inverse * inverse * entry[1] + 2 * inverse * progress * corner[1] + progress * progress * exit[1]
+        ]);
+      }
+    }
+    result.push([...points.at(-1)]);
+    return result;
+  }
+  function pointSegmentDistance(x, y, start, end) {
+    const dx = end[0] - start[0], dy = end[1] - start[1], denominator = dx * dx + dy * dy;
+    const progress = denominator ? Math.max(0, Math.min(1, ((x - start[0]) * dx + (y - start[1]) * dy) / denominator)) : 0;
+    return Math.hypot(x - start[0] - dx * progress, y - start[1] - dy * progress);
+  }
+  function automaticBuildSlots(routes, width, height, cellSize, clearance, blockedCells) {
+    const blocked = new Set(blockedCells.map(cell => `${cell[0]},${cell[1]}`)), slots = [];
+    for (let row = 0; row < Math.floor(height / cellSize); row++) for (let col = 0; col < Math.floor(width / cellSize); col++) {
+      if (blocked.has(`${col},${row}`)) continue;
+      const x = col * cellSize + cellSize / 2, y = row * cellSize + cellSize / 2;
+      const distance = Math.min(...routes.flatMap(route => route.slice(1).map((point, index) => pointSegmentDistance(x, y, route[index], point))));
+      if (distance >= clearance) slots.push([col, row]);
+    }
+    return slots;
+  }
 
   class ContentDefinition {
     constructor(key, data = {}) {
@@ -38,9 +92,25 @@
   class MapDefinition extends ContentDefinition {
     constructor(key, data) {
       super(key, data);
-      if (!Array.isArray(data.path) || data.path.length < 2) throw new Error(`Map requires a path: ${key}`);
+      const sourceRoutes = data.routes || (data.path ? [data.path] : []);
+      if (!Array.isArray(sourceRoutes) || !sourceRoutes.length || sourceRoutes.some(route => !Array.isArray(route) || route.length < 2)) throw new Error(`Map requires at least one route: ${key}`);
       this.width = data.width || 960; this.height = data.height || 540; this.cellSize = data.cellSize || 60;
-      this.path = Object.freeze(data.path.map(point => Object.freeze([...point])));
+      if (data.routeStyle === 'orthogonal' && sourceRoutes.some(route => route.slice(1).some((point,index) => point[0] !== route[index][0] && point[1] !== route[index][1]))) throw new Error(`Orthogonal route contains a diagonal segment: ${key}`);
+      this.routeControls = Object.freeze(sourceRoutes.map(route => Object.freeze(route.map(point => Object.freeze([...point])))));
+      this.routes = Object.freeze(sourceRoutes.map(route => Object.freeze((data.routeStyle === 'orthogonal' ? roundOrthogonalRoute(route, data.cornerRadius || 22, data.curveSteps || 5) : smoothRoute(route, data.curveSteps || 8)).map(point => Object.freeze(point)))));
+      this.path = this.routes[0];
+      this.routeLengths = Object.freeze(this.routes.map(route => route.slice(1).reduce((sum, point, index) => sum + Math.hypot(point[0] - route[index][0], point[1] - route[index][1]), 0)));
+      this.blockedCells = Object.freeze((data.blockedCells || []).map(cell => Object.freeze([...cell])));
+      const buildSlots = data.buildSlots === 'auto' ? automaticBuildSlots(this.routes, this.width, this.height, this.cellSize, data.buildClearance || 55, this.blockedCells) : (data.buildSlots || []);
+      this.buildSlots = Object.freeze(buildSlots.map(slot => Object.freeze([...slot])));
+      this.initialSlot = Object.freeze([...(data.initialSlot || this.buildSlots[0] || [1, 6])]);
+      this.ritualSite = data.ritualSite ? Object.freeze([...data.ritualSite]) : null;
+      const routePlan = data.routePlan || [{ from: 1, weights: sourceRoutes.map(() => 1) }];
+      if (!routePlan.length || routePlan.some(plan => !Number.isInteger(plan.from) || plan.from < 1 || !Array.isArray(plan.weights) || plan.weights.length !== sourceRoutes.length || plan.weights.some(weight => !Number.isInteger(weight) || weight < 0) || !plan.weights.some(Boolean))) throw new Error(`Invalid route plan: ${key}`);
+      this.routePlan = Object.freeze([...routePlan].sort((left,right) => left.from - right.from).map(plan => Object.freeze({ from: plan.from, weights: Object.freeze([...plan.weights]) })));
+      this.specialSlots = Object.freeze((data.specialSlots || []).map(slot => Object.freeze({ ...slot })));
+      if (this.buildSlots.length && !this.buildSlots.some(slot => slot[0] === this.initialSlot[0] && slot[1] === this.initialSlot[1])) throw new Error(`Initial slot is not buildable: ${key}`);
+      if (this.specialSlots.some(special => !this.buildSlots.some(slot => slot[0] === special.col && slot[1] === special.row))) throw new Error(`Special slot is not buildable: ${key}`);
       this.palette = freezeObject(data.palette);
       this.bonus = freezeArray(data.bonus);
       Object.freeze(this);

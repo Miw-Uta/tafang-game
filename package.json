@@ -1,0 +1,27 @@
+{
+  "name": "tafang_game",
+  "version": "1.0.0",
+  "description": "原生 HTML5 Canvas 塔防游戏，包含本地动画素材生成工具。",
+  "main": "content-system.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Miw-Uta/tafang-game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Miw-Uta/tafang-game/issues"
+  },
+  "homepage": "https://github.com/Miw-Uta/tafang-game#readme",
+  "dependencies": {
+    "@tweenjs/tween.js": "^25.0.0",
+    "sharp": "^0.33.5"
+  }
+}

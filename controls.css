@@ -10,24 +10,10 @@
 .speed-btn { width: 45px; }
 .merge-btn { height: 39px; padding: 0 12px; border: 1px solid #e6a052; border-radius: 10px; background: #fff4df; color: #b96320; font: 900 12px 'Nunito','Noto Sans SC',sans-serif; cursor: pointer; white-space: nowrap; }
 .merge-btn:hover { background: #ffe7be; border-color: #dd812d; }
-.cultivate-btn { width: 100%; margin-top: 6px; padding: 7px; border: 1px solid #c7a052; border-radius: 4px; background: #fff6dc; color: #8c631d; font: 800 9px inherit; cursor: pointer; }
-.cultivate-btn:hover:not(:disabled), .cultivate-btn.active { border-color: #b5791d; background: #ffe8a9; }
-.cultivate-btn:disabled { cursor: not-allowed; opacity: .4; }
-.infuse-btn { border-color: #77a06f; background: #edf6e8; color: #3f7045; }
-.infuse-btn:hover:not(:disabled) { border-color: #4f8154; background: #dff1d8; }
-.cultivation-policy { margin-top: 9px; padding: 8px; border: 1px solid #cadbc4; border-radius: 6px; background: #fffdf7; }
-.cultivation-policy > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.cultivation-policy > div:first-child > b { flex: none; color: #36533e; font-size: 10px; }
-.cultivation-policy > div:first-child > small { color: #718178; font-size: 7px; line-height: 1.35; text-align: right; }
-.policy-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 7px; }
-.policy-options button { min-width: 0; height: 34px; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 3px; border: 1px solid #d5e1d0; border-radius: 4px; background: #f5f9f2; color: #546b59; font-family: inherit; cursor: pointer; }
-.policy-options button span { font-size: 12px; }
-.policy-options button b { overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.policy-options button:hover, .policy-options button.active { border-color: #d99837; background: #fff0c6; color: #80571f; }
-.policy-options button.active { box-shadow: inset 0 -2px #dda03c; }
-.core-assign-btn { width: 100%; min-height: 27px; margin-top: 5px; border: 1px dashed #c69139; border-radius: 4px; background: #fff8e7; color: #81591e; font: 800 8px 'Nunito','Noto Sans SC',sans-serif; cursor: pointer; }
-.core-assign-btn:hover:not(:disabled) { border-style: solid; background: #ffedbd; }
-.core-assign-btn:disabled { cursor: not-allowed; opacity: .42; }
+.merge-progress-copy { display: block; margin-top: 4px; color: #9a651f; font-weight: 900; }
+.merge-meter { display: block; width: min(190px, 100%); height: 6px; margin-top: 5px; overflow: hidden; border-radius: 99px; background: #e7e2c9; box-shadow: inset 0 1px 2px rgba(40,55,35,.14); }
+.merge-meter i { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: linear-gradient(90deg, #92c85a, #efb542); transition: width 180ms ease; }
+.merge-rule { display: block; margin-top: 3px; color: #748579; font-size: 8px; line-height: 1.45; }
 .formation-bonds { margin-bottom: 10px; padding-bottom: 9px; border-bottom: 1px solid #d5e1d0; }
 .formation-bonds > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .formation-bonds > div:first-child > b { color: #30483a; font-size: 10px; }

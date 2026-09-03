@@ -53,16 +53,15 @@ function testMergeRulesAndEvolution() {
   assert.equal(accelerated.level, 12);
   const cultivator = factory.create({ col: 6, row: 0, level: 6 });
   const lowSeed = factory.create({ col: 7, row: 0, level: 2 });
-  assert.equal(cultivator.canMergeWith(lowSeed, { identityResolver: tower => tower.evo, maxLevel: 20, cultivation: true }), true);
-  assert.equal(cultivator.absorb(lowSeed, { identityResolver: tower => tower.evo, maxLevel: 20, cultivation: true, growthThreshold: level => level }), true);
+  assert.equal(cultivator.canMergeWith(lowSeed, { identityResolver: tower => tower.evo, maxLevel: 20, progressiveMerge: true }), true);
+  assert.equal(cultivator.absorb(lowSeed, { identityResolver: tower => tower.evo, maxLevel: 20, progressiveMerge: true, growthThreshold: level => level, mergeMaterialValue: tower => tower.level }), true);
   assert.equal(cultivator.level, 6);
   assert.equal(cultivator.growth, 2);
   const resonant = factory.create({ col: 8, row: 0, level: 6 });
   const twin = factory.create({ col: 9, row: 0, level: 6 });
-  assert.equal(resonant.absorb(twin, { identityResolver: tower => tower.evo, maxLevel: 20, cultivation: true, growthThreshold: level => level, resonanceBonus: level => Math.ceil(level * .5) }), true);
+  assert.equal(resonant.absorb(twin, { identityResolver: tower => tower.evo, maxLevel: 20, progressiveMerge: true, growthThreshold: level => level, mergeMaterialValue: tower => tower.level, resonanceBonus: level => Math.ceil(level * .5) }), true);
   assert.equal(resonant.level, 7);
   assert.equal(resonant.lastAbsorbKind, 'resonance');
-  assert.equal(factory.create({ col: 10, row: 0, level: 4, evo: 'water', evoTier: 1 }).sacrificeValue(), 3);
 }
 
 function testAttackStrategies() {
@@ -79,6 +78,14 @@ function testAttackStrategies() {
   assert.equal(damageLog.length, 2);
   assert.equal(visualLog.length, 2);
   assert.equal(water.cool, .5);
+  assert.equal(water.attackAnimation.weapon, 'seedshot');
+  assert.equal(water.attackAnimation.target.id, 'front');
+  water.updateAttackAnimation(.2);
+  assert.ok(water.attackAnimation.age >= .2);
+  const firstSequence = water.attackAnimation.sequence;
+  water.beginAttack(catalog.get('water'), [enemies[1]]);
+  assert.equal(water.attackAnimation.sequence, firstSequence);
+  assert.equal(water.queuedAttack.targets[0].id, 'front');
   assert.equal(water.updateCombat(.1, combatContext(catalog, patterns, enemies, damageLog, visualLog)).length, 0);
 }
 
