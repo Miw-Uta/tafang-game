@@ -63,8 +63,9 @@
       const candidates = enemies
         .filter(enemy => !enemy.dead && Math.hypot(enemy.x - position.x, enemy.y - position.y) < radius)
       const progress = enemy => enemy.routeProgress ?? enemy.dist ?? 0;
-      const priority = tower.targeting || 'front';
-      const prioritized = priority === 'demolish' ? candidates.filter(enemy => enemy.isStructure) : candidates.filter(enemy => !enemy.isStructure);
+      if (tower.manualTarget && !tower.manualTarget.dead && tower.manualTarget.hp > 0 && candidates.includes(tower.manualTarget)) return [tower.manualTarget];
+      const priority = 'front';
+      const prioritized = candidates.filter(enemy => !enemy.isStructure);
       return prioritized.sort((left, right) => {
         if (priority === 'back') return progress(left) - progress(right);
         if (priority === 'strong') return (right.hp - left.hp) || progress(right) - progress(left);
@@ -128,7 +129,7 @@
   }
 
   class Tower {
-    constructor({ col, row, level = 1, evo = 'base', evoTier = 0, cool = 0, evolutionPath = null, growth = 0, targeting = 'front' } = {}) {
+    constructor({ col, row, level = 1, evo = 'base', evoTier = 0, cool = 0, evolutionPath = null, growth = 0 } = {}) {
       if (!Number.isInteger(col) || !Number.isInteger(row)) throw new Error('Tower requires integer grid coordinates');
       this.col = col;
       this.row = row;
@@ -138,7 +139,6 @@
       this.cool = cool;
       this.evolutionPath = evolutionPath;
       this.growth = Math.max(0, Number(growth) || 0);
-      this.targeting = targeting || 'front';
       this.attackAnimation = null;
       this.attackSequence = 0;
     }
@@ -271,7 +271,7 @@
       return {
         col: this.col, row: this.row, level: this.level, evo: this.evo,
         evoTier: this.evoTier, cool: this.cool, evolutionPath: this.evolutionPath
-        , growth: this.growth, targeting: this.targeting || 'front'
+        , growth: this.growth
       };
     }
   }

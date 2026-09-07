@@ -296,7 +296,7 @@ const spawnDirector = new EnemyDomain.SpawnDirector(enemyCatalog, enemyTraitCata
 const ENEMY_TRAVEL_SPEED = 48;
 
 let towers, enemies, attackEvents, projectiles, hits, fxParticles, coins, lives, score, wave, kills, spawned;
-let running, gameWon, finalWave, spawnTimer, drag, selectedTower, selectedEnemy, pendingEvolution, pendingEvolutionStage, evolutionDecision, evolutionWasPaused, nextWaveTimer, started, paused, speed, last, fiveAttemptSignature, discoveredEvolutions, currentWaveEvent, combo, comboTimer, surgeCharge, screenFlash, cameraShake, visualClock, battlefieldIndex, reserve, standbyReserve, pendingDeployLevel, pendingDeployTowerIndex, deployHover, growthMode, growthCycles, germinationOffers, mapObjects, mapUnlockedSlots, lastMergeSnapshot, intermissionSummary;
+let running, gameWon, finalWave, spawnTimer, drag, selectedTower, selectedEnemy, selectedMapObject, pendingEvolution, pendingEvolutionStage, evolutionDecision, evolutionWasPaused, nextWaveTimer, started, paused, speed, last, fiveAttemptSignature, discoveredEvolutions, currentWaveEvent, combo, comboTimer, surgeCharge, screenFlash, cameraShake, visualClock, battlefieldIndex, reserve, standbyReserve, pendingDeployLevel, pendingDeployTowerIndex, deployHover, growthMode, growthCycles, germinationOffers, mapObjects, mapUnlockedSlots, lastMergeSnapshot, intermissionSummary;
 let selectedModeKey = 'endless', selectedLevelKey = contentRegistry.levels.keys()[0];
 
 function resetGame() {
@@ -306,7 +306,7 @@ function resetGame() {
   towers = [towerFactory.create({ col: initialSlot[0], row: initialSlot[1], level: 1 })];
   enemies = []; attackEvents = []; projectiles = []; hits = []; fxParticles = [];
   coins = 0; lives = gameSession.lives; score = 0; wave = gameSession.waveNumber; kills = 0; spawned = 0;
-  running = false; gameWon = false; finalWave = false; spawnTimer = 0; drag = null; selectedTower = towers[0]; selectedEnemy = null; pendingEvolution = null; pendingEvolutionStage = null; evolutionDecision = null; evolutionWasPaused = false; nextWaveTimer = 0; started = false; paused = false; speed = 1; fiveAttemptSignature = null; discoveredEvolutions = new Set(); currentWaveEvent = contentRegistry.events.get(gameSession.currentWave.eventKey); combo = 0; comboTimer = 0; surgeCharge = 0; screenFlash = 0; cameraShake = 0; visualClock = 0; reserve = {}; standbyReserve = []; pendingDeployLevel = null; pendingDeployTowerIndex = null; deployHover = null; growthMode = 'balanced'; growthCycles = { sprout: 0, balanced: 0, refine: 0, total: 0 }; germinationOffers = []; mapObjects = createMapObjects(currentBattlefield()); mapUnlockedSlots = new Set(); lastMergeSnapshot = null; intermissionSummary = '';
+  running = false; gameWon = false; finalWave = false; spawnTimer = 0; drag = null; selectedTower = towers[0]; selectedEnemy = null; selectedMapObject = null; pendingEvolution = null; pendingEvolutionStage = null; evolutionDecision = null; evolutionWasPaused = false; nextWaveTimer = 0; started = false; paused = false; speed = 1; fiveAttemptSignature = null; discoveredEvolutions = new Set(); currentWaveEvent = contentRegistry.events.get(gameSession.currentWave.eventKey); combo = 0; comboTimer = 0; surgeCharge = 0; screenFlash = 0; cameraShake = 0; visualClock = 0; reserve = {}; standbyReserve = []; pendingDeployLevel = null; pendingDeployTowerIndex = null; deployHover = null; growthMode = 'balanced'; growthCycles = { sprout: 0, balanced: 0, refine: 0, total: 0 }; germinationOffers = []; mapObjects = createMapObjects(currentBattlefield()); mapUnlockedSlots = new Set(); lastMergeSnapshot = null; intermissionSummary = '';
 }
 
 function center(item) { return { x: item.col * CELL + CELL / 2, y: item.row * CELL + CELL / 2 }; }
@@ -431,11 +431,14 @@ function updateSelectionInfo() {
     const actualInterval=(z.rate*formationCombatModifiers(selectedTower).cooldown*growthCombatModifiers().cooldown*(slotEffect?.cooldown||1)).toFixed(2);
     const actualRange=(currentAttackRadius(z,selectedTower)/CELL).toFixed(1);
     const slotText=slotEffect?`<br><span style="color:${slotEffect.text};font-weight:900">${slotEffect.icon} ${slotEffect.name}：${slotEffect.desc}</span>`:isRitualCell(selectedTower.col,selectedTower.row)?'<br><span style="color:#956a22;font-weight:900">阵 九宫阵位：参与五灵、太极与隐藏阵式融合</span>':'<br>普通部署位：无额外修正';
-    $('selectedInfo').innerHTML = `<span class="info-icon">${z.icon}</span><div><b>${z.name} · Lv.${selectedTower.level}</b><small>${z.desc || '基础单体攻击'}<br>实际伤害 ${actualDamage} · 攻击间隔 ${actualInterval}s · 半径 ${actualRange} 格<br>${deliveryDetail} · ${effectNames[z.effect] || '无附加效果'}${slotText}${bonds ? `<br>阵容标签 ${bonds}` : ''}${mergeProgress}<br><button class="target-mode-btn" id="targetModeBtn">目标：${selectedTower.targeting === 'demolish' ? '清理地图目标' : selectedTower.targeting === 'strong' ? '优先强敌' : selectedTower.targeting === 'weak' ? '优先残血' : '优先前排'}</button></small></div>`;
-    const targetButton = $('targetModeBtn');
-    if (targetButton) targetButton.onclick = () => { const modes = ['front','strong','weak','demolish']; selectedTower.targeting = modes[(modes.indexOf(selectedTower.targeting || 'front') + 1) % modes.length]; $('message').textContent = selectedTower.targeting === 'demolish' ? '该塔将主动清理地图目标，敌人会被放过。' : '该塔已切换敌人优先级。'; ui(); };
+    const manualText = selectedTower.manualTarget && activeMapObjects().includes(selectedTower.manualTarget)
+      ? `<br><span class="manual-target-copy">已指向：${selectedTower.manualTarget.name} · 点击其他目标或拖动塔可改变安排</span>`
+      : selectedMapObject ? '<br><span class="manual-target-copy">已选地图目标：再点击一座塔完成指向</span>' : '';
+    $('selectedInfo').innerHTML = `<span class="info-icon">${z.icon}</span><div><b>${z.name} · Lv.${selectedTower.level}</b><small>${z.desc || '基础单体攻击'}<br>实际伤害 ${actualDamage} · 攻击间隔 ${actualInterval}s · 半径 ${actualRange} 格<br>${deliveryDetail} · ${effectNames[z.effect] || '无附加效果'}${slotText}${bonds ? `<br>阵容标签 ${bonds}` : ''}${mergeProgress}${manualText}</small></div>`;
   } else {
-    $('selectedInfo').innerHTML = '<span class="info-icon">🌰</span><div><b>拖动橡果塔改变位置</b><small>点击敌人可查看属性 · Lv.5 选择主路线，Lv.10 选择专属分支</small></div>';
+    $('selectedInfo').innerHTML = selectedMapObject
+      ? `<span class="info-icon">${selectedMapObject.icon || '◆'}</span><div><b>${selectedMapObject.name}</b><small>生命 ${Math.ceil(selectedMapObject.hp)}/${selectedMapObject.max}<br>再点击一座塔，将它指向这个目标</small></div>`
+      : '<span class="info-icon">🌰</span><div><b>拖动橡果塔改变位置</b><small>点击敌人可查看属性 · Lv.5 选择主路线，Lv.10 选择专属分支</small></div>';
   }
 }
 function ui() {
@@ -902,9 +905,15 @@ function damageTarget(t, target, z) {
   if (target?.isStructure) {
     const rawDamage = z.damage * t.level * formationDamageMultiplier(t) * (towerSlotEffect(t)?.damage || 1);
     target.receiveDamage(rawDamage);
+    target.visualHit = .16;
+    target.hitFromX = center(t).x;
+    if (hits.length < runtime.maxHits) hits.push({ type: 'damageText', x: target.x + (Math.random() - .5) * 10, y: target.y - 28, life: .7, color: '#ffe8a8', label: `-${Math.max(1, Math.round(rawDamage))}` });
+    impactFx(target.x, target.y, z.color || '#f5c85c', z.combat?.weapon || 'hit', 22);
     if (target.hp <= 0 && !target.dead) {
       target.dead = true;
       target.cleared = true;
+      if (selectedMapObject === target) selectedMapObject = null;
+      towers.forEach(tower => { if (tower.manualTarget === target) tower.manualTarget = null; });
       gainSpirit(target.reward, t);
       target.unlocks?.forEach(([col, row]) => mapUnlockedSlots.add(`${col},${row}`));
       $('message').textContent = `${target.name}已清理，获得 ${target.reward} 灵力${target.unlocks?.length ? `，开放 ${target.unlocks.length} 个部署位` : ''}。`;
@@ -1186,10 +1195,21 @@ function updateFxParticles(dt) {
   fxParticles = fxParticles.filter(p => p.life > 0);
 }
 function towerCombatContext() {
-  const targets = [
-    ...enemies.filter(enemy => !enemy.dead && enemy.hp > 0),
-    ...(started && !gameWon ? activeMapObjects().map(object => { object.isStructure = true; object.routeProgress = -1; object.dist = -1; object.receiveDamage = amount => { object.hp -= amount; }; return object; }) : [])
-  ];
+  const targets = enemies.filter(enemy => !enemy.dead && enemy.hp > 0);
+  const structures = started && !gameWon ? activeMapObjects() : [];
+  towers.forEach(tower => {
+    const target = tower.manualTarget;
+    if (!target) return;
+    if (!structures.includes(target) || Math.hypot(target.x - center(tower).x, target.y - center(tower).y) >= currentAttackRadius(towerCatalog.get(tower.evo), tower)) {
+      tower.manualTarget = null;
+      return;
+    }
+    target.isStructure = true;
+    target.routeProgress = -1;
+    target.dist = -1;
+    target.receiveDamage = amount => { target.hp -= amount; };
+    if (!targets.includes(target)) targets.push(target);
+  });
   return {
     catalog: towerCatalog,
     patterns: attackPatterns,
@@ -1336,13 +1356,51 @@ function drawScenery() {
 function drawMapObject(structure) {
   const pulse = runtime.reducedMotion ? 0 : Math.sin(visualClock * 2 + structure.col) * 2;
   const ratio = Math.max(0, structure.hp / structure.max);
-  ctx.save(); ctx.translate(structure.x, structure.y);
-  ctx.fillStyle = 'rgba(26,45,31,.26)'; ctx.beginPath(); ctx.ellipse(0, 22, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = structure.kind === 'cache' ? '#5c7183' : structure.kind === 'monolith' ? '#6470a0' : '#6a7652'; ctx.strokeStyle = '#e6c36a'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(0, pulse, 19, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#f7df91'; ctx.font = '900 11px Noto Sans SC'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(structure.icon || '◆', 0, pulse);
-  ctx.fillStyle = 'rgba(35,45,32,.72)'; roundedRect(-22, -31, 44, 5, 3); ctx.fill(); ctx.fillStyle = '#f3b94d'; roundedRect(-21, -30, 42 * ratio, 3, 2); ctx.fill();
-  ctx.fillStyle = '#fff0af'; ctx.font = '800 9px Nunito'; ctx.fillText(`${structure.name} · +${structure.reward} 灵力`, 0, 32); ctx.restore();
+  const selected = selectedMapObject === structure;
+  const hit = structure.visualHit || 0;
+  ctx.save(); ctx.translate(structure.x, structure.y + pulse); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.fillStyle = 'rgba(26,45,31,.28)'; ctx.beginPath(); ctx.ellipse(0, 23, 30, 9, 0, 0, Math.PI * 2); ctx.fill();
+  if (selected) {
+    const ring = 31 + Math.sin(visualClock * 7) * 2;
+    ctx.strokeStyle = '#fff1a8'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(0, 0, ring, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if (structure.kind === 'thicket') {
+    ctx.strokeStyle = '#4d6034'; ctx.lineWidth = 7; [-14, 0, 14].forEach((x, index) => { ctx.beginPath(); ctx.moveTo(x, 18); ctx.quadraticCurveTo(x - 8 + index * 5, 1, x + (index - 1) * 7, -18); ctx.stroke(); });
+    ctx.strokeStyle = '#9fbd52'; ctx.lineWidth = 3; for (let index = 0; index < 7; index++) { const angle = index * .9; ctx.beginPath(); ctx.moveTo(Math.cos(angle) * 7, Math.sin(angle) * 7 - 3); ctx.lineTo(Math.cos(angle) * 24, Math.sin(angle) * 20 - 8); ctx.stroke(); }
+    ctx.fillStyle = '#d9e977'; for (let index = 0; index < 5; index++) { const angle = index * 1.24; ctx.beginPath(); ctx.arc(Math.cos(angle) * 17, Math.sin(angle) * 14 - 5, 6, 0, Math.PI * 2); ctx.fill(); }
+  } else if (structure.kind === 'cache') {
+    ctx.fillStyle = '#405a68'; ctx.strokeStyle = '#bad7dc'; ctx.lineWidth = 2.5; roundedRect(-22, -2, 44, 23, 4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#698896'; roundedRect(-24, -11, 48, 15, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#f3cf69'; roundedRect(-4, -2, 8, 11, 2); ctx.fill(); ctx.strokeStyle = '#fff0a7'; ctx.lineWidth = 1.5; ctx.stroke();
+  } else if (structure.kind === 'monolith') {
+    ctx.fillStyle = '#687692'; ctx.strokeStyle = '#c2d5e4'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-16, 20); ctx.lineTo(-13, -18); ctx.lineTo(0, -27); ctx.lineTo(15, -17); ctx.lineTo(18, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#c9ebf0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(0, 10); ctx.moveTo(-6, -5); ctx.lineTo(6, -5); ctx.moveTo(-5, 8); ctx.lineTo(5, 8); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#4b8d91'; ctx.strokeStyle = '#b8f0df'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, 4, 25, 18, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#dcfff0'; ctx.lineWidth = 2; [0, 1].forEach(index => { ctx.beginPath(); ctx.arc(0, 4, 9 + index * 7 + Math.sin(visualClock * 2 + index) * 1.5, .2, Math.PI - .2); ctx.stroke(); });
+    ctx.fillStyle = '#9dc95f'; ctx.beginPath(); ctx.ellipse(7, -2, 9, 4, -.35, 0, Math.PI * 2); ctx.fill();
+  }
+  if (hit > 0) { ctx.globalAlpha = Math.min(.65, hit * 3); ctx.fillStyle = '#fff8cc'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = 'rgba(28,44,32,.86)'; roundedRect(-30, -40, 60, 13, 4); ctx.fill();
+  ctx.fillStyle = '#fff0b0'; ctx.font = '900 9px Noto Sans SC'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(structure.name, 0, -33.5);
+  ctx.fillStyle = 'rgba(26,43,32,.82)'; roundedRect(-27, 29, 54, 6, 3); ctx.fill(); ctx.fillStyle = '#f3bd4e'; roundedRect(-26, 30, 52 * ratio, 4, 2); ctx.fill();
+  ctx.fillStyle = '#ffedaf'; ctx.font = '800 8px Nunito'; ctx.fillText(`+${structure.reward} 灵力`, 0, 44); ctx.restore();
+}
+function drawManualTargetLinks() {
+  const assignments = towers.filter(tower => tower.manualTarget && activeMapObjects().includes(tower.manualTarget));
+  if (!assignments.length) return;
+  ctx.save(); ctx.setLineDash([5, 7]); ctx.lineWidth = 2; ctx.lineCap = 'round';
+  assignments.forEach(tower => {
+    const from = center(tower), target = tower.manualTarget;
+    const color = evolution[tower.evo].color || '#fff0a0';
+    ctx.strokeStyle = color; ctx.globalAlpha = .78;
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(target.x, target.y); ctx.stroke();
+    const progress = (visualClock * .9 + tower.col * .13 + tower.row * .17) % 1;
+    const x = from.x + (target.x - from.x) * progress, y = from.y + (target.y - from.y) * progress;
+    ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.fillStyle = '#fff7bd'; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.setLineDash([5, 7]);
+  });
+  ctx.restore();
 }
 function drawWorldTree(end) {
   const field=currentBattlefield(),x=Math.min(W-48,end[0]-46),y=end[1],sway=runtime.reducedMotion?0:Math.sin(visualClock*.9)*1.5;
@@ -1624,7 +1682,8 @@ function drawFace(size, mood = 'brave') {
   ctx.stroke();
 }
 function towerAimAngle(tower) {
-  const origin=center(tower), target=enemies.filter(enemy=>!enemy.dead&&enemy.hp>0)
+  const origin=center(tower), assigned=tower.manualTarget;
+  const target=assigned && !assigned.dead && assigned.hp>0 ? assigned : enemies.filter(enemy=>!enemy.dead&&enemy.hp>0)
     .map(enemy=>({enemy,distance:Math.hypot(enemy.x-origin.x,enemy.y-origin.y)}))
     .sort((left,right)=>left.distance-right.distance)[0]?.enemy;
   return target ? Math.atan2(target.y-origin.y,target.x-origin.x) : -Math.PI/2;
@@ -1934,6 +1993,7 @@ function draw() {
     ctx.restore();
   }
   drawFusionHint();
+  drawManualTargetLinks();
   if(selectedTower&&towers.includes(selectedTower)){const p=drag&&drag.tower===selectedTower?{x:drag.x,y:drag.y}:center(selectedTower),z=evolution[selectedTower.evo],r=currentAttackRadius(z,selectedTower);ctx.save();ctx.fillStyle=z.color+'22';ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=z.color;ctx.lineWidth=3;ctx.stroke();ctx.restore()}
   if(drag){const col=Math.max(0,Math.min(COLS-1,Math.floor(drag.x/CELL))),row=Math.max(0,Math.min(ROWS-1,Math.floor(drag.y/CELL))),other=towers.find(t=>t!==drag.tower&&t.col===col&&t.row===row),valid=!isRoad(col,row)&&(!other||canMergeTowers(other,drag.tower)||canMergeTowers(drag.tower,other));ctx.save();drawBuildPad(col,row,valid?'rgba(229,255,178,.55)':'rgba(205,66,52,.46)',valid?'#f5ffb2':'#ff8a78');ctx.restore()}
   towers.forEach(drawTower);
@@ -2000,6 +2060,7 @@ function update(dt) {
     }
     if (spawned >= waveSize() && enemies.length === 0) completeWave();
   }
+  activeMapObjects().forEach(object => { object.visualHit = Math.max(0, (object.visualHit || 0) - dt); });
   enemies.forEach(enemy => {const route=currentPath(enemy.routeIndex||0),routeLength=enemy.routeLength||pathLength(route);enemy.visualHit=Math.max(0,(enemy.visualHit||0)-dt);enemy.update(dt, {
     positionAt: distance=>pointAt(distance,route), pathLength: routeLength, enemies,
     onDotLethal: (source, target) => damageTarget(source, target, { ...evolution[source.evo], damage: 0 }),
@@ -2017,9 +2078,49 @@ function update(dt) {
 function loop(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;if(!paused)update(dt*speed);try{draw()}catch(error){console.error('地图绘制已切换至兼容模式',error);drawFallback()}requestAnimationFrame(loop)}
 function pointerCell(e){const r=canvas.getBoundingClientRect();return{col:Math.max(0,Math.min(COLS-1,Math.floor((e.clientX-r.left)*W/r.width/CELL))),row:Math.max(0,Math.min(ROWS-1,Math.floor((e.clientY-r.top)*H/r.height/CELL)))}}
 function pointerPosition(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-canvas.addEventListener('pointerdown',e=>{const c=pointerCell(e),p=pointerPosition(e);if(pendingDeployLevel||pendingDeployTowerIndex!==null){deployReserve(c.col,c.row);return}const tower=towers.find(t=>t.col===c.col&&t.row===c.row);if(tower){
-  selectedEnemy=null; selectedTower=tower;drag={tower,x:p.x,y:p.y,origin:{col:tower.col,row:tower.row}};canvas.setPointerCapture(e.pointerId);ui();return
-}const object=mapObjectAt(c.col,c.row);if(object){selectedEnemy=null;selectedTower=null;$('message').textContent=`${object.name}：${Math.ceil(object.hp)}/${object.max}，需要将一座塔切换为“清理地图目标”。`;ui();return}const enemy=[...enemies].reverse().find(item=>Math.hypot(item.x-p.x,item.y-p.y)<=item.radius+7);if(enemy){selectedEnemy=enemy;selectedTower=null;ui()}});
+canvas.addEventListener('pointerdown', e => {
+  const c = pointerCell(e), p = pointerPosition(e);
+  if (pendingDeployLevel || pendingDeployTowerIndex !== null) { deployReserve(c.col, c.row); return; }
+  const tower = towers.find(item => item.col === c.col && item.row === c.row);
+  if (tower) {
+    selectedEnemy = null;
+    selectedTower = tower;
+    if (selectedMapObject) {
+      const towerPosition = center(tower);
+      if (Math.hypot(selectedMapObject.x - towerPosition.x, selectedMapObject.y - towerPosition.y) >= currentAttackRadius(towerCatalog.get(tower.evo), tower)) {
+        $('message').textContent = `${evolution[tower.evo].name}离${selectedMapObject.name}太远，先调整站位。`;
+      } else {
+        tower.manualTarget = selectedMapObject;
+        $('message').textContent = `${evolution[tower.evo].name}已指向${selectedMapObject.name}。`;
+        selectedMapObject = null;
+      }
+      ui();
+      return;
+    }
+    drag = { tower, x: p.x, y: p.y, origin: { col: tower.col, row: tower.row } };
+    canvas.setPointerCapture(e.pointerId); ui(); return;
+  }
+  const object = mapObjectAt(c.col, c.row);
+  if (object) {
+    selectedEnemy = null;
+    selectedMapObject = object;
+    if (selectedTower) {
+      if (Math.hypot(object.x - center(selectedTower).x, object.y - center(selectedTower).y) < currentAttackRadius(towerCatalog.get(selectedTower.evo), selectedTower)) {
+        selectedTower.manualTarget = object;
+        $('message').textContent = `${evolution[selectedTower.evo].name}已指向${object.name}。`;
+        selectedMapObject = null;
+      } else {
+        selectedTower = null;
+        $('message').textContent = `${object.name}已选定，再点击一座射程内的塔。`;
+      }
+    } else {
+      $('message').textContent = `${object.name}已选定，再点击一座射程内的塔。`;
+    }
+    ui(); return;
+  }
+  const enemy = [...enemies].reverse().find(item => Math.hypot(item.x - p.x, item.y - p.y) <= item.radius + 7);
+  if (enemy) { selectedEnemy = enemy; selectedTower = null; selectedMapObject = null; ui(); }
+});
 canvas.addEventListener('pointermove',e=>{if(pendingDeployLevel||pendingDeployTowerIndex!==null){deployHover=pointerCell(e);return}if(!drag)return;const r=canvas.getBoundingClientRect();drag.x=(e.clientX-r.left)*W/r.width;drag.y=(e.clientY-r.top)*H/r.height});
 canvas.addEventListener('pointerleave',()=>{deployHover=null});
 canvas.addEventListener('contextmenu',event=>{if(!pendingDeployLevel&&pendingDeployTowerIndex===null)return;event.preventDefault();pendingDeployLevel=null;pendingDeployTowerIndex=null;deployHover=null;$('message').textContent='已取消部署。';ui()});
@@ -2039,7 +2140,7 @@ canvas.addEventListener('pointerup', () => {
     tower.relocate(drag.origin.col, drag.origin.row);
     $('message').textContent = towerMergeIdentity(other) !== towerMergeIdentity(tower) ? '只有完全相同形态和分支的守卫才能合成。' : '素材等级不能高于主塔，或主塔已到达等级上限。';
   }
-  if (tower.col !== drag.origin.col || tower.row !== drag.origin.row) lastMergeSnapshot = null;
+  if (tower.col !== drag.origin.col || tower.row !== drag.origin.row) { tower.manualTarget = null; lastMergeSnapshot = null; }
   delete drag.origin; drag = null; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui();
 });
 canvas.addEventListener('pointercancel',()=>{if(!drag)return;drag.tower.col=drag.origin.col;drag.tower.row=drag.origin.row;drag=null;ui()});
@@ -2191,7 +2292,7 @@ function renderChapterGrid() {
   });
 }
 function leaveBattle() { paused = true; running = false; gameSession.abandon(); navigatePage('hub'); }
-if ($('fieldBtn')) $('fieldBtn').onclick=()=>{if(running||gameSession.mode.levelRequired)return;const unlocked=battlefields.filter(item=>item.unlock<=wave);if(unlocked.length<2)return;const current=unlocked.indexOf(currentBattlefield());battlefieldIndex=(current+1)%unlocked.length;gameSession.selectMap(currentBattlefield().key);mapObjects=createMapObjects(currentBattlefield());mapUnlockedSlots=new Set();const moved=fitTowersToBattlefield();$('message').textContent=`已切换至${currentBattlefield().name}：${currentBattlefield().desc}${moved?` · ${moved} 座守卫已移至最近安全地块`:''}`;screenFlash=.25;ui()};
+if ($('fieldBtn')) $('fieldBtn').onclick=()=>{if(running||gameSession.mode.levelRequired)return;const unlocked=battlefields.filter(item=>item.unlock<=wave);if(unlocked.length<2)return;const current=unlocked.indexOf(currentBattlefield());battlefieldIndex=(current+1)%unlocked.length;gameSession.selectMap(currentBattlefield().key);mapObjects=createMapObjects(currentBattlefield());mapUnlockedSlots=new Set();selectedMapObject=null;towers.forEach(tower=>{tower.manualTarget=null});const moved=fitTowersToBattlefield();$('message').textContent=`已切换至${currentBattlefield().name}：${currentBattlefield().desc}${moved?` · ${moved} 座守卫已移至最近安全地块`:''}`;screenFlash=.25;ui()};
 $('waveBtn').onclick=()=>{if(lives<=0||gameWon||gameSession.status==='lost'){resetGame();started=true;startWave();return}if(!running){started=true;startWave()}};
 $('pauseBtn').onclick=()=>{if(!started||gameWon)return;paused=!paused;$('pauseBtn').textContent=paused?'▶':'Ⅱ';$('message').textContent=paused?'游戏已暂停':'游戏继续';ui()};
 $('speedBtn').onclick=()=>{speed=speed===1?2:speed===2?3:1;$('speedBtn').textContent=`${speed}×`};

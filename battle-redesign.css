@@ -157,9 +157,12 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
   overflow: hidden;
 }
 .battle-page .map-operations {
-  min-height: 54px;
+  min-height: 76px;
   display: grid;
-  grid-template-columns: 145px 180px 170px minmax(0,1fr);
+  grid-template-columns: 145px 180px minmax(170px,1fr) minmax(150px,1fr);
+  grid-template-areas:
+    "spirit roots sprouts reserve"
+    "objective objective objective objective";
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
@@ -169,12 +172,13 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
   box-shadow: inset 0 1px rgba(255,255,255,.04);
 }
 .battle-page .map-operations .hud-spirit {
+  grid-area: spirit;
   min-height: 42px;
   padding: 2px 7px;
   border-right: 1px solid rgba(255,255,255,.14);
   border-bottom: 0;
 }
-.battle-page .compact-roots { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; }
+.battle-page .compact-roots { grid-area: roots; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; }
 .battle-page .compact-roots button { min-width: 0; height: 38px; border: 1px solid #476052; border-radius: 4px; background: #274438; color: #dbe6dc; font-family: inherit; cursor: pointer; }
 .battle-page .compact-roots button small { display: block; margin-top: 1px; color: inherit; font-size: 7px; font-weight: 900; }
 .battle-page .compact-roots button:hover,
@@ -183,7 +187,7 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
   background: #f0b54e;
   color: #2d291c;
 }
-.battle-page .compact-reserve { min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr) 34px; align-items: center; gap: 7px; }
+.battle-page .compact-reserve { grid-area: reserve; min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr) 34px; align-items: center; gap: 7px; }
 .battle-page .compact-reserve > small { color: #aebfae; font-size: 8px; font-weight: 900; white-space: nowrap; }
 .battle-page .compact-reserve > div { min-width: 0; display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: thin; }
 .battle-page .hud-seed { border-color: #527060; background: #274438; }
@@ -205,7 +209,7 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
 .battle-page .compact-shop button { min-width: 0; height: 30px; border: 1px solid #527060; border-radius: 4px; background: #274438; color: #dbe6dc; font: 800 9px inherit; cursor: pointer; }
 .battle-page .compact-shop button:hover:not(:disabled) { border-color: #f0bd61; background: #355546; }
 .battle-page .compact-shop button:disabled { opacity: .4; cursor: not-allowed; }
-.battle-page .compact-sprouts { min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr) 28px; align-items: center; gap: 5px; }
+.battle-page .compact-sprouts { grid-area: sprouts; min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr) 28px; align-items: center; gap: 5px; }
 .battle-page .compact-sprouts > small { color: #aebfae; font-size: 8px; font-weight: 900; white-space: nowrap; }
 .battle-page .compact-sprouts > div { min-width: 0; display: flex; gap: 3px; overflow-x: auto; }
 .battle-page .sprout-offer { min-width: 94px; height: 32px; border: 1px solid #527060; border-radius: 4px; background: #274438; color: #dbe6dc; font: 800 8px inherit; cursor: pointer; text-align: left; padding: 3px 5px; }
@@ -214,14 +218,13 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
 .battle-page .sprout-offer.claimed { opacity: .35; }
 .battle-page #sproutRefresh { width: 28px; height: 28px; border: 1px solid #66836c; border-radius: 4px; background: #2f4d3b; color: #f4d47c; cursor: pointer; }
 .battle-page #sproutRefresh:disabled { opacity: .4; cursor: not-allowed; }
-.battle-page .map-objective { grid-column: 1 / -1; color: #d8e6d4; font-size: 8px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.target-mode-btn { margin-top: 4px; border: 1px solid #9a7840; border-radius: 3px; background: #314c3b; color: #ffe3a0; font: 800 9px inherit; padding: 3px 6px; cursor: pointer; }
-.target-mode-btn:hover { background: #46694e; }
+.battle-page .map-objective { grid-area: objective; min-width: 0; padding: 3px 7px 0; border-top: 1px solid rgba(178,218,182,.13); color: #d8e6d4; font-size: 8px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.manual-target-copy { color: #f5d77a; font-weight: 900; }
 
 .battle-page .battle-map-slot { min-width: 0; min-height: 0; place-items: center; }
 .battle-page .battle-map-slot .canvas-frame {
   width: 100%;
-  max-width: calc((100vh - 218px)*16/9);
+  max-width: calc((100vh - 242px)*16/9);
   height: auto;
   aspect-ratio: 16/9;
   border: 5px solid #6f5333;
@@ -309,7 +312,7 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
 
 @media (max-width: 1080px) {
   .battle-page { grid-template-columns: minmax(0,1fr) 252px; }
-  .battle-page .map-operations { grid-template-columns: 125px 160px 155px minmax(0,1fr); }
+  .battle-page .map-operations { grid-template-columns: 125px 160px minmax(145px,1fr) minmax(135px,1fr); }
   .battle-page .stats .stat { min-width: 74px; padding-inline: 8px; }
   .battle-page .mode-entry-btn b { display: none; }
 }
@@ -327,7 +330,7 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
   .battle-page .mode-entry-btn { display: none; }
   .battle-page .stage-wrap { padding: 9px; }
   .battle-page .battle-stage-body { display: flex; flex-direction: column; gap: 8px; }
-  .battle-page .map-operations { grid-template-columns: 110px 160px 150px minmax(0,1fr); max-height: none; }
+  .battle-page .map-operations { grid-template-columns: 110px 160px minmax(145px,1fr) minmax(135px,1fr); max-height: none; }
   .battle-page .battle-map-slot { flex: none; }
   .battle-page .battle-map-slot .canvas-frame { width: 100%; max-width: none; }
   .battle-page .stage-foot { display: flex; flex-wrap: wrap; }
@@ -353,7 +356,7 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
   .battle-page .progress { flex-basis: 100%; }
   .battle-page .surge-btn { width: auto; flex: 1; }
   .battle-page .wave-btn { min-width: 118px; }
-  .battle-page .map-operations { grid-template-columns: 96px minmax(0,1fr); grid-template-rows: auto auto auto; }
-  .battle-page .compact-shop, .battle-page .compact-sprouts { grid-column: 1 / -1; }
-  .battle-page .compact-reserve { grid-column: 1 / -1; }
+  .battle-page .map-operations { grid-template-columns: 96px minmax(0,1fr); grid-template-areas: "spirit roots" "sprouts sprouts" "reserve reserve" "objective objective"; }
+  .battle-page .compact-shop, .battle-page .compact-sprouts { grid-column: auto; }
+  .battle-page .compact-reserve { grid-column: auto; }
 }
