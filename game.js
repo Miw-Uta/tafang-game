@@ -49,7 +49,13 @@ const primaryEvolutionLayerSpecs = Object.freeze({
   ]
 });
 function buildPrimaryEvolutionLayers(source, key) {
-  const specs = primaryEvolutionLayerSpecs[key], width = source.width || source.naturalWidth, height = source.height || source.naturalHeight;
+  const originalSpecs = primaryEvolutionLayerSpecs[key], width = source.width || source.naturalWidth, height = source.height || source.naturalHeight;
+  // Art coordinates use the original 2048px canvas. Keep pivots and cutouts
+  // aligned when caching the much smaller textures needed by the battlefield.
+  const specs = originalSpecs?.map(spec => ({ ...spec,
+    pivot: [spec.pivot[0] * width / 2048, spec.pivot[1] * height / 2048],
+    points: spec.points.map(([x, y]) => [x * width / 2048, y * height / 2048])
+  }));
   if (!specs || !width || !height || !document.createElement) return null;
   const base = document.createElement('canvas'), baseContext = base.getContext?.('2d');
   if (!baseContext) return null;
@@ -79,10 +85,13 @@ function loadPrimaryEvolutionArt() {
       // Convert the generated JPG's near-white background to transparency once.
       const buffer = document.createElement?.('canvas');
       if (!buffer) { primaryEvolutionImages[key] = image; return; }
-      buffer.width = image.naturalWidth || image.width; buffer.height = image.naturalHeight || image.height;
+      const sourceWidth = image.naturalWidth || image.width, sourceHeight = image.naturalHeight || image.height;
+      const textureScale = Math.min(1, 512 / Math.max(sourceWidth, sourceHeight));
+      buffer.width = Math.max(1, Math.round(sourceWidth * textureScale));
+      buffer.height = Math.max(1, Math.round(sourceHeight * textureScale));
       const bufferContext = buffer.getContext('2d');
       if (!bufferContext) { primaryEvolutionImages[key] = image; return; }
-      bufferContext.drawImage(image, 0, 0);
+      bufferContext.drawImage(image, 0, 0, buffer.width, buffer.height);
       const pixels = bufferContext.getImageData(0, 0, buffer.width, buffer.height);
       for (let i = 0; i < pixels.data.length; i += 4) {
         const whiteness = Math.min(pixels.data[i], pixels.data[i + 1], pixels.data[i + 2]);
@@ -121,6 +130,10 @@ const audioBus = {
     oscillator.connect(volume).connect(audioContext.destination);
     oscillator.start();
     oscillator.stop(audioContext.currentTime + duration);
+  },
+  cue(name = 'tap') {
+    const cues = { tap:[520,.045,'sine',.018], select:[680,.06,'sine',.02], deny:[120,.08,'square',.018], wave:[240,.12,'triangle',.024], boss:[90,.22,'sawtooth',.03], decision:[360,.16,'triangle',.025], reward:[740,.12,'sine',.025] };
+    const cue=cues[name] || cues.tap;this.play(...cue);
   },
   merge() { this.play(420, .09, 'triangle', .035); },
   evolve() { this.play(680, .18, 'sine', .045); },
@@ -196,7 +209,7 @@ const effectNames = { stun: '概率眩晕', weaken: '削弱护甲', slow: '持�
 const projectileStyleNames = { seed:'橡果弹',blade:'旋刃',thorn:'针雨',bubble:'水珠',fireball:'抛射火球',boulder:'击退巨石',shadow:'曲线影弹',sun:'日轮弹幕',windblade:'疾风扇刃',lightning:'跃动雷弧',frost:'冰晶齐射',void:'虚空星弹',spirit:'五灵弹幕',taiji:'阴阳轮' };
 const deliveryNames = { projectile:'远程弹幕',bombard:'抛物轰炸',melee:'近战攻击',beam:'直线贯穿',chain:'逐段连锁',area:'落点范围',rain:'持续弹雨',nova:'全域阵法' };
 const weaponNames = { seedshot:'橡果射手',boomerang:'回旋镖',rocket:'追踪火箭',waterjet:'连续水枪',scatter:'扇形散射',drill:'贯星钻头',meteor:'陨石轰炸',lightning:'连锁落雷',mine:'地脉地雷',sunbeam:'聚光日冕',shadowOrbit:'影刃环',quake:'大地震波' };
-const weaponDescriptions = { seedshot:'稳定单体种子弹',boomerang:'去程与回程各有一次命中机会',rocket:'追踪目标并在落点爆炸',waterjet:'连续喷射，持续削弱前排',scatter:'扇形覆盖，多方向同时压制',drill:'沿攻击轴高速贯穿',meteor:'先预警落点，再造成大范围重击',lightning:'沿目标队列逐段跳跃',mine:'埋下后等待敌人踏入触发',sunbeam:'从天空持续灼射目标',shadowOrbit:'影刃环绕塔身，周期性切割近敌',quake:'地面震波并击退范围内敌人' };
+const weaponDescriptions = { seedshot:'稳定单体种子弹',boomerang:'去程与回程各有一次命中机会',rocket:'追踪目标并在落点爆炸',waterjet:'连续喷射，持续削弱前排',scatter:'扇形覆盖，多方向同时压制',drill:'沿攻击轴高速贯穿',meteor:'先预警落点，再造成大范围重击',lightning:'沿目标队列逐段跳跃',mine:'埋下后等待敌人踏入触发',sunbeam:'从天空持续灼射目标',shadowOrbit:'影刃环绕射程内目标，四次切割合计一次攻击伤害',quake:'地面震波并击退范围内敌人' };
 const projectileProfiles = {
   base: { projectileStyle: 'seed', projectileSpeed: 360, volley: 1 },
   metal: { projectileStyle: 'blade', projectileSpeed: 430, volley: 1 },
@@ -296,17 +309,65 @@ const spawnDirector = new EnemyDomain.SpawnDirector(enemyCatalog, enemyTraitCata
 const ENEMY_TRAVEL_SPEED = 48;
 
 let towers, enemies, attackEvents, projectiles, hits, fxParticles, coins, lives, score, wave, kills, spawned;
-let running, gameWon, finalWave, spawnTimer, drag, selectedTower, selectedEnemy, selectedMapObject, pendingEvolution, pendingEvolutionStage, evolutionDecision, evolutionWasPaused, nextWaveTimer, started, paused, speed, last, fiveAttemptSignature, discoveredEvolutions, currentWaveEvent, combo, comboTimer, surgeCharge, screenFlash, cameraShake, visualClock, battlefieldIndex, reserve, standbyReserve, pendingDeployLevel, pendingDeployTowerIndex, deployHover, growthMode, growthCycles, germinationOffers, mapObjects, mapUnlockedSlots, lastMergeSnapshot, intermissionSummary;
+let running, gameWon, finalWave, spawnTimer, drag, selectedTower, selectedEnemy, selectedMapObject, pendingEvolution, pendingEvolutionStage, evolutionDecision, evolutionWasPaused, nextWaveTimer, started, paused, speed, last, fiveAttemptSignature, discoveredEvolutions, currentWaveEvent, combo, comboTimer, surgeCharge, screenFlash, cameraShake, visualClock, battlefieldIndex, reserve, standbyReserve, pendingDeployLevel, pendingDeployTowerIndex, deployHover, growthMode, growthCycles, germinationOffers, mapObjects, mapUnlockedSlots, lastMergeSnapshot, intermissionSummary, campaignNextLevelKey;
 let selectedModeKey = 'endless', selectedLevelKey = contentRegistry.levels.keys()[0];
+let campaignRun = null;
+let missionStory = null, campaignRewards = {};
+const battleTactics = typeof TacticsDomain !== 'undefined' ? new TacticsDomain.BattleTactics() : null;
+const bossEncounters = typeof BossDomain !== 'undefined' ? new BossDomain.BossEncounters() : null;
+const campaignProgress = new ContentDomain.CampaignProgress(contentRegistry.levels, {
+  read: () => localStorage.getItem('tafang.campaignProgress'),
+  write: value => localStorage.setItem('tafang.campaignProgress', value)
+});
 
 function resetGame() {
+  window.campaignModifiers = { damage: 1, hp: 1, difficulty: 'normal', support: 'seeds' };
   gameSession.reset({ modeKey: gameSession.mode.key, levelKey: gameSession.level?.key || null, mapKey: gameSession.map.key });
   battlefieldIndex = battlefields.findIndex(field => field.key === gameSession.map.key);
   const initialSlot=currentBattlefield().initialSlot||[1,6];
-  towers = [towerFactory.create({ col: initialSlot[0], row: initialSlot[1], level: 1 })];
+  // Endless mode used to begin with one Lv.1 tower, zero spirit and no
+  // reserve.  That left the player watching the first wave with no meaningful
+  // decision to make, and made the opening feel like a tutorial that had not
+  // been wired up.  Give the endless run the same small planning budget as a
+  // real expedition: one draw, plus two basic seeds to shape the first
+  // formation.  Campaign loadouts remain data driven.
+  const loadout = gameSession.isFinite ? gameSession.level.startingLoadout : null;
+  const initial = loadout?.tower || { level: 1, evo: 'base' };
+  towers = [towerFactory.create({ col: initialSlot[0], row: initialSlot[1], ...initial, evolutionPath: initial.evo === 'base' ? null : branchOf[initial.evo] || initial.evo, evoTier: initial.evo === 'base' ? 0 : 1 })];
   enemies = []; attackEvents = []; projectiles = []; hits = []; fxParticles = [];
   coins = 0; lives = gameSession.lives; score = 0; wave = gameSession.waveNumber; kills = 0; spawned = 0;
-  running = false; gameWon = false; finalWave = false; spawnTimer = 0; drag = null; selectedTower = towers[0]; selectedEnemy = null; selectedMapObject = null; pendingEvolution = null; pendingEvolutionStage = null; evolutionDecision = null; evolutionWasPaused = false; nextWaveTimer = 0; started = false; paused = false; speed = 1; fiveAttemptSignature = null; discoveredEvolutions = new Set(); currentWaveEvent = contentRegistry.events.get(gameSession.currentWave.eventKey); combo = 0; comboTimer = 0; surgeCharge = 0; screenFlash = 0; cameraShake = 0; visualClock = 0; reserve = {}; standbyReserve = []; pendingDeployLevel = null; pendingDeployTowerIndex = null; deployHover = null; growthMode = 'balanced'; growthCycles = { sprout: 0, balanced: 0, refine: 0, total: 0 }; germinationOffers = []; mapObjects = createMapObjects(currentBattlefield()); mapUnlockedSlots = new Set(); lastMergeSnapshot = null; intermissionSummary = '';
+  running = false; gameWon = false; finalWave = false; spawnTimer = 0; drag = null; selectedTower = towers[0]; selectedEnemy = null; selectedMapObject = null; pendingEvolution = null; pendingEvolutionStage = null; evolutionDecision = null; evolutionWasPaused = false; nextWaveTimer = 0; started = false; paused = false; speed = 1; fiveAttemptSignature = null; discoveredEvolutions = new Set(); currentWaveEvent = contentRegistry.events.get(gameSession.currentWave.eventKey); combo = 0; comboTimer = 0; surgeCharge = 0; screenFlash = 0; cameraShake = 0; visualClock = 0; reserve = {}; standbyReserve = []; pendingDeployLevel = null; pendingDeployTowerIndex = null; deployHover = null; growthMode = 'balanced'; growthCycles = { sprout: 0, balanced: 0, refine: 0, total: 0 }; germinationOffers = []; mapObjects = createMapObjects(currentBattlefield()); mapUnlockedSlots = new Set(); lastMergeSnapshot = null; intermissionSummary = ''; campaignNextLevelKey = null;
+  coins = loadout?.spirit || 0;
+  reserve = { ...(loadout?.seeds || {}) };
+  standbyReserve = (loadout?.standby || []).map(tower => ({ ...tower }));
+  campaignRun = gameSession.isFinite ? new CampaignDomain.CampaignRun(gameSession.level) : null;
+  missionStory = gameSession.isFinite && typeof StoryDomain !== 'undefined' ? new StoryDomain.MissionStory(StoryContent.decisions[gameSession.level.key]) : null;
+  campaignRewards = {};
+  battleTactics?.reset();
+  bossEncounters?.reset();
+  window.TacticsUI?.cancel();
+  window.BattleCamera?.reset();
+  towers.forEach(tower => { if (tower.evo !== 'base') discoveredEvolutions.add(tower.evo); });
+  $('waveBtn').disabled = false;
+  $('waveBtn').textContent = gameSession.isFinite ? '开始守护' : '开始冒险';
+  $('pauseBtn').textContent = 'Ⅱ';
+  $('speedBtn').textContent = '1×';
+}
+
+// The public endless entry point gets a short, deterministic opening kit.  It
+// lives outside resetGame so simulation/tests that call startMode directly keep
+// the economy contract, while a real player never starts with an empty bench.
+function prepareEndlessOpening() {
+  if (gameSession.mode?.kind !== 'endless' || gameSession.completedWaves > 0) return;
+  // Keep the developer/test API deterministic; only the hub button grants
+  // this player-facing opening package.
+  coins = Math.max(coins, 100);
+  reserve[1] = Math.max(2, reserve[1] || 0);
+  if (!germinationOffers.some(offer => !offer.claimed)) {
+    germinationOffers = [{ kind: 'seed', level: 1 }];
+  }
+  $('message').textContent = '整备阶段：领取抽芽并部署灵种，组成第一套阵容后开始第 1 波。';
+  ui();
 }
 
 function center(item) { return { x: item.col * CELL + CELL / 2, y: item.row * CELL + CELL / 2 }; }
@@ -325,15 +386,16 @@ function currentPaths() { return currentBattlefield().routes || [currentBattlefi
 function currentPath(index = 0) { return currentPaths()[index] || currentPaths()[0]; }
 function pathLength(path) { return path.slice(1).reduce((sum,point,index)=>sum+Math.hypot(point[0]-path[index][0],point[1]-path[index][1]),0); }
 function currentPathLength(index = 0) { return currentBattlefield().routeLengths?.[index] || pathLength(currentPath(index)); }
-function currentAttackRadius(towerData,tower=null) { return attackRadius(towerData) * (currentWaveEvent?.range || 1) * currentBattlefield().range * (towerSlotEffect(tower)?.range||1) * (tower ? formationCombatModifiers(tower).range : 1); }
+function missionEffects() { return missionStory?.effects() || {}; }
+function currentAttackRadius(towerData,tower=null) { return attackRadius(towerData) * (currentWaveEvent?.range || 1) * currentBattlefield().range * (towerSlotEffect(tower)?.range||1) * (tower ? formationCombatModifiers(tower).range : 1) * (missionEffects().range || 1); }
 function segmentDistance(x, y, a, b) {
   const dx = b[0] - a[0], dy = b[1] - a[1];
   const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy)));
   return Math.hypot(x - (a[0] + t * dx), y - (a[1] + t * dy));
 }
 function terrainDefinition() { const field=currentBattlefield();return {type:field.terrainType||'grove',blocked:field.blockedCells||[]}; }
-function routeWeightsForWave(waveNumber=wave){const plans=currentBattlefield().routePlan||[{from:1,weights:currentPaths().map(()=>1)}];return (plans.filter(plan=>plan.from<=waveNumber).at(-1)||plans[0]).weights;}
-function routeUnlockWave(routeIndex){return currentBattlefield().routePlan?.find(plan=>(plan.weights[routeIndex]||0)>0)?.from||1;}
+function routeWeightsForWave(waveNumber=wave){if(missionEffects().routeWeights&&waveNumber>=missionStory.decision.atWave)return missionEffects().routeWeights;const plans=gameSession.level?.routePlan||currentBattlefield().routePlan||[{from:1,weights:currentPaths().map(()=>1)}];return (plans.filter(plan=>plan.from<=waveNumber).at(-1)||plans[0]).weights;}
+function routeUnlockWave(routeIndex){const plans=gameSession.level?.routePlan||currentBattlefield().routePlan||[];return plans.find(plan=>plan.from>wave&&(plan.weights[routeIndex]||0)>0)?.from||plans.find(plan=>(plan.weights[routeIndex]||0)>0)?.from||1;}
 function routeIndexForSpawn(spawnIndex,waveNumber=wave){const weights=routeWeightsForWave(waveNumber),sequence=[];weights.forEach((weight,index)=>{for(let count=0;count<weight;count++)sequence.push(index)});return sequence[spawnIndex%Math.max(1,sequence.length)]||0;}
 function isRouteOpen(routeIndex,waveNumber=wave){return (routeWeightsForWave(waveNumber)[routeIndex]||0)>0;}
 function isTerrainBlocked(col, row) { return terrainDefinition().blocked.some(cell => cell[0] === col && cell[1] === row); }
@@ -349,6 +411,60 @@ function cellRoadDistance(col,row) { return Math.min(...cellRouteDistances(col,r
 function isBuildSlot(col,row){return (currentBattlefield().buildSlots?.some(slot=>slot[0]===col&&slot[1]===row)||mapUnlockedSlots?.has(`${col},${row}`))&&!isTerrainBlocked(col,row)&&!mapObjectAt(col,row)&&cellRoadDistance(col,row)>=55;}
 function isRoad(col, row) { return !isBuildSlot(col,row); }
 function occupied(col, row, except = null) { return towers.some(t => t !== except && t.col === col && t.row === row) || mapObjects.some(object => !object.cleared && object.col === col && object.row === row); }
+function tacticsContext() {
+  const page = document.body.dataset?.page;
+  const storyModal = $('storyModal');
+  return {
+    running, paused, won: gameWon, lives, width: W, height: H, towers, enemies,
+    paths: currentPaths().filter((path, index) => isRouteOpen(index)),
+    blocked: Boolean((page && page !== 'battle') || pendingEvolution || (storyModal && !storyModal.hidden) || $('evoModal')?.classList.contains('show'))
+  };
+}
+function castTactic(key, point) {
+  if (!battleTactics) return { ok: false, reason: '战术系统尚未就绪。' };
+  const result = battleTactics.cast(key, point, tacticsContext());
+  if (!result.ok) return result;
+  result.shieldTargets.forEach(enemy => {
+    enemy.shield *= enemy.type === 'boss' ? .7 : .4;
+    enemy.combatTimer = 0;
+    statusText(enemy, '削盾', '#b7c6ff');
+  });
+  const interrupted = key === 'flare' && bossEncounters ? enemies.filter(enemy =>
+    Math.hypot(enemy.x - point.x, enemy.y - point.y) <= TacticsDomain.ABILITIES.flare.radius
+      && bossEncounters.interrupt(enemy, bossEncounterContext())
+  ) : [];
+  interrupted.forEach(enemy => { statusText(enemy, '读条打断 · 破绽', '#f8d690'); burst(enemy.x, enemy.y, '#f8d690'); });
+  enemies.forEach(enemy => {
+    battleTactics.enemyEffects(enemy).forEach(effect => applyEnemyStatus(enemy, effect, .3));
+  });
+  const ability = TacticsDomain.ABILITIES[key];
+  burst(point.x, point.y, ability.color);
+  audioBus.cue('decision');
+  $('message').textContent = `${ability.name}已释放 · ${result.reason} · 剩余 ${Math.floor(battleTactics.energy)} 指令。`;
+  if (interrupted.length) $('message').textContent = `照夜萤火打断 ${interrupted.length} 名首领！破绽持续 3 秒，守卫对其伤害 +15%。`;
+  window.TacticsUI?.refresh();
+  return result;
+}
+function bossEncounterContext() {
+  return {
+    ...tacticsContext(), finite: gameSession.isFinite, missionNumber: gameSession.level?.missionNumber || 0,
+    difficulty: window.campaignModifiers?.difficulty || 'normal', wave,
+    positionOf: center,
+    inRange: (enemy, tower) => { const origin = center(tower); return Math.hypot(enemy.x - origin.x, enemy.y - origin.y) <= currentAttackRadius(evolution[tower.evo], tower); }
+  };
+}
+function advanceBossEncounters(dt) {
+  const events = bossEncounters?.tick(dt, bossEncounterContext()) || [];
+  events.forEach(event => {
+    if (event.type === 'warning') {
+      $('message').textContent = `${event.boss.definition?.name || '首领'}：${event.skill.name}！3 秒后圈内守卫停攻 2 秒。移出圆圈，或用 E 照夜萤火命中首领打断。`;
+      audioBus.cue('boss');
+    } else if (event.type === 'impact') {
+      $('message').textContent = event.towers.length ? `首领技能命中 ${event.towers.length} 座守卫：整备 2 秒后恢复攻击。` : '成功避开首领技能！守卫继续攻击。';
+      event.towers.forEach(tower => burst(center(tower).x, center(tower).y, '#ffc9a0'));
+    }
+  });
+}
 function fitTowersToBattlefield() {
   let moved=0;
   towers.forEach(tower=>{
@@ -389,7 +505,7 @@ function endlessThreatProfile(waveNumber = wave) {
 }
 function waveTrait() {
   if (gameSession.currentWave?.traitKey) return gameSession.currentWave.traitKey;
-  if (gameSession.isFinite) return wave <= 2 ? null : enemyTraitKeys[(wave - 3) % enemyTraitKeys.length];
+  if (gameSession.isFinite) return null;
   return endlessThreatProfile(wave).traitKey;
 }
 function waveThreatHint(definition = gameSession.currentWave) {
@@ -399,14 +515,18 @@ function waveThreatHint(definition = gameSession.currentWave) {
   const rosterKeys = definition.roster?.length ? definition.roster : profile?.roster;
   const trait = traitKey ? enemyTraits[traitKey]?.label : null;
   const roster = rosterKeys?.length ? rosterKeys.map(key => enemyArchetypes[key]?.name || key).join('、') : '';
-  return [trait && `主属性：${trait}`, roster && `敌群：${roster}`].filter(Boolean).join(' · ');
+  const counter = {
+    armored:'推荐木/金/土破甲；火系先打护盾', resistant:'推荐金/火/土输出，水/风只负责控制', regenerating:'推荐火/阴持续伤害并集中爆发',
+    swift:'推荐水/风减速，火/阳范围清场', fortified:'推荐金/土单体收尾，雷/水优先破盾',
+  }[traitKey] || (rosterKeys?.includes('mireseer') ? '先用“反制”锁定祭司光环，再处理护盾' : rosterKeys?.includes('glimmermoth') ? '先用控制命中流光蛾，再让范围塔输出' : '保持两路覆盖，首领出现时切换“反制”');
+  return [trait && `主属性：${trait}`, roster && `敌群：${roster}`, `应对：${counter}`].filter(Boolean).join(' · ');
 }
 function updateSelectionInfo() {
   if (selectedEnemy) {
     const type = selectedEnemy.definition || enemyTypes[selectedEnemy.type];
     const traits = selectedEnemy.traits.length ? selectedEnemy.traits.map(key => `<span style="color:${enemyTraits[key].color}">● ${enemyTraits[key].label}</span>`).join(' · ') : '<span style="color:#748079">无属性</span>';
     const status = selectedEnemy.dead || selectedEnemy.hp <= 0 ? ' · 已击败' : '';
-    const activeStatuses = [[selectedEnemy.burn,'燃烧'],[selectedEnemy.poison,'中毒'],[selectedEnemy.freeze,'冻结'],[selectedEnemy.stun,'眩晕'],[selectedEnemy.slow,'减速'],[selectedEnemy.weaken,'破甲'],[selectedEnemy.taiji,'易伤']].filter(([time])=>time>0).map(([time,label])=>`${label} ${time.toFixed(1)}s`).join(' · ') || '无异常状态';
+    const activeStatuses = [[selectedEnemy.burn,'燃烧'],[selectedEnemy.poison,'中毒'],[selectedEnemy.freeze,'冻结'],[selectedEnemy.stun,'眩晕'],[selectedEnemy.stunRecovery,'韧性：免疫眩晕'],[selectedEnemy.slow,'减速'],[selectedEnemy.weaken,'破甲'],[selectedEnemy.taiji,'易伤']].filter(([time])=>time>0).map(([time,label])=>`${label} ${time.toFixed(1)}s`).join(' · ') || '无异常状态';
     const resistEntries = Object.entries(selectedEnemy.resist || {}), highResists = resistEntries.filter(([, value]) => value > .18);
     const resistText = resistEntries.every(([, value]) => value === 0) ? '属性抗性：无' : highResists.map(([key, value]) => `${evolution[key]?.name?.replace('守卫','') || key} ${Math.round(value * 100)}%`).join(' · ') || '属性抗性：低';
     const abilityText = type.abilities?.length ? ` · 能力 ${type.abilities.join('、')}` : '';
@@ -427,12 +547,15 @@ function updateSelectionInfo() {
       : '<br><span class="merge-progress-copy">已达 Lv.20 终点</span>';
     const towerTags = new Set(towerSynergyTags(selectedTower));
     const bonds = formationSynergies().filter(result => towerTags.has(result.definition.tag)).map(result => result.definition.name).join(' · ');
-    const actualDamage=Math.round(z.damage*selectedTower.level*formationDamageMultiplier(selectedTower)*(slotEffect?.damage||1));
-    const actualInterval=(z.rate*formationCombatModifiers(selectedTower).cooldown*growthCombatModifiers().cooldown*(slotEffect?.cooldown||1)).toFixed(2);
+    const fieldBonus=currentBattlefield().bonus.includes(towerBranch(selectedTower))?currentBattlefield().damage:1;
+    const supportBonus=gameSession.isFinite?window.campaignModifiers?.damage||1:1;
+    const actualDamage=Math.round(z.damage*selectedTower.level*formationDamageMultiplier(selectedTower)*(slotEffect?.damage||1)*fieldBonus*supportBonus);
+    const actualInterval=(z.rate*formationCombatModifiers(selectedTower).cooldown*growthCombatModifiers().cooldown*(slotEffect?.cooldown||1)*(battleTactics?.cooldownMultiplier(center(selectedTower))||1)).toFixed(2);
     const actualRange=(currentAttackRadius(z,selectedTower)/CELL).toFixed(1);
     const slotText=slotEffect?`<br><span style="color:${slotEffect.text};font-weight:900">${slotEffect.icon} ${slotEffect.name}：${slotEffect.desc}</span>`:isRitualCell(selectedTower.col,selectedTower.row)?'<br><span style="color:#956a22;font-weight:900">阵 九宫阵位：参与五灵、太极与隐藏阵式融合</span>':'<br>普通部署位：无额外修正';
-    const manualText = selectedTower.manualTarget && activeMapObjects().includes(selectedTower.manualTarget)
-      ? `<br><span class="manual-target-copy">已指向：${selectedTower.manualTarget.name} · 点击其他目标或拖动塔可改变安排</span>`
+    const manualTargetValid = selectedTower.manualTarget && (activeMapObjects().includes(selectedTower.manualTarget) || enemies.includes(selectedTower.manualTarget));
+    const manualText = manualTargetValid
+      ? `<br><span class="manual-target-copy">已指向：${selectedTower.manualTarget.name || selectedTower.manualTarget.definition?.name || '目标'} · 点击其他目标可改变安排</span>`
       : selectedMapObject ? '<br><span class="manual-target-copy">已选地图目标：再点击一座塔完成指向</span>' : '';
     $('selectedInfo').innerHTML = `<span class="info-icon">${z.icon}</span><div><b>${z.name} · Lv.${selectedTower.level}</b><small>${z.desc || '基础单体攻击'}<br>实际伤害 ${actualDamage} · 攻击间隔 ${actualInterval}s · 半径 ${actualRange} 格<br>${deliveryDetail} · ${effectNames[z.effect] || '无附加效果'}${slotText}${bonds ? `<br>阵容标签 ${bonds}` : ''}${mergeProgress}${manualText}</small></div>`;
   } else {
@@ -444,13 +567,15 @@ function updateSelectionInfo() {
 function ui() {
   if ($('devTools')) $('devTools').hidden = !isDeveloperMode();
   $('coins').textContent = coins; $('lives').textContent = lives; $('score').textContent = score; $('wave').textContent = wave;
+  setText('phaseLabel', `${running ? '战斗进行中' : gameWon ? '本关完成' : lives <= 0 ? '防线失守' : '整备阶段'} · 第 ${wave} 波`);
   setText('waveTotal', gameSession.isFinite ? `/ ${gameSession.level.waves.length}` : '/ ∞');
   $('progressText').textContent = `${kills} / ${waveSize()}`;
   $('progressBar').style.width = `${Math.min(100, kills / waveSize() * 100)}%`;
   $('surgeCharge').textContent = Math.floor(surgeCharge);
   $('surgeFill').style.width = `${surgeCharge}%`;
+  $('surgeBtn').title = `消耗 100% 充能，对全场造成最大生命 ${Number((surgeDamageRatio() * 100).toFixed(1))}% 的基础伤害并短暂眩晕；伤害受抗性影响。橙光击杀不会为自身充能。`;
   $('surgeBtn').disabled = surgeCharge < 100 || !enemies.some(enemy => !enemy.dead) || paused;
-  if ($('undoMergeBtn')) $('undoMergeBtn').disabled = !lastMergeSnapshot || Boolean(pendingEvolution);
+  if ($('undoMergeBtn')) $('undoMergeBtn').disabled = running || !lastMergeSnapshot || Boolean(pendingEvolution);
   const mergeCount = mergeOpportunityCount();
   if ($('mergeBtn')) { $('mergeBtn').disabled = running || Boolean(pendingEvolution) || !mergeCount; $('mergeBtn').textContent = mergeCount ? `合成 ×${mergeCount}` : '暂无可合成'; }
   $('surgeBtn').classList.toggle('ready', surgeCharge >= 100);
@@ -471,6 +596,13 @@ function ui() {
   updateSelectionInfo();
   updateWorkshop();
   updateEvolutionSummary();
+  updateBattleCoach();
+  observeCampaign();
+  window.CampaignUI?.update();
+  window.CampaignSave?.save();
+}
+function observeCampaign() {
+  campaignRun?.observe({ lives, combo, towers: towers.map(tower => ({ evo: tower.evo, level: tower.level, lineage: towerBranch(tower), fusion: Boolean(evolution[tower.evo]?.fusion) })), synergyCount: formationSynergies().filter(item => item.tier).length, mapCleared: mapObjects.filter(object => object.cleared).length });
 }
 function updateRoster() {
   const groups = new Map();
@@ -524,15 +656,38 @@ function updateMapOperations(reserveEntries = Object.entries(reserve).filter(([,
   }
   const offers = $('mapOffers');
   if (offers) {
-    offers.innerHTML = germinationOffers.map((offer, index) => {
-      const label = offer.kind === 'seed' ? `Lv.${offer.level} 灵种` : `培育 ${offer.level}级塔`;
-      const detail = offer.kind === 'seed' ? '收入灵种仓' : '为选中塔增加成长进度';
-      return `<button class="sprout-offer${offer.claimed ? ' claimed' : ''}" data-sprout="${index}" title="${detail}" ${offer.claimed ? 'disabled' : ''}><b>${offer.kind === 'seed' ? '🌰' : '✦'} ${label}</b><small>${detail}</small></button>`;
-    }).join('') || '<span class="hud-empty">灵力达到阈值后抽芽</span>';
-    offers.querySelectorAll('[data-sprout]').forEach(button => button.onclick = () => claimGermination(Number(button.dataset.sprout)));
+    const selectedKey = selectedTower ? `${selectedTower.evo}:${selectedTower.level}:${selectedTower.growth || 0}` : 'none';
+    const signature = JSON.stringify([germinationOffers, selectedKey, running, Boolean(pendingEvolution)]);
+    // Combat calls ui() frequently. Keep the offer nodes alive while nothing
+    // relevant changed so focus and horizontal position are not reset.
+    if (offers.dataset.signature !== signature) {
+      offers.innerHTML = germinationOffers.map((offer, index) => {
+        const label = offer.kind === 'seed' ? `Lv.${offer.level} 灵种` : `培育 +${offer.level}`;
+        const canCultivate = selectedTower && towers.includes(selectedTower) && selectedTower.level < MAX_LEVEL && !hasUnresolvedEvolution(selectedTower);
+        const blocked = running ? '战斗中不可领取' : pendingEvolution ? '完成进化选择后可领取' : offer.kind === 'cultivate' && !canCultivate ? '请选择可成长的守卫' : '';
+        const detail = blocked || (offer.kind === 'seed' ? '领取后进入灵种仓' : canCultivate ? `${evolution[selectedTower.evo].name} · 成长 +${offer.level}` : '选择守卫后培育');
+        const disabled = offer.claimed || Boolean(blocked) || pendingEvolution;
+        const symbol = offer.kind === 'seed' ? '芽' : '培';
+        return `<button class="sprout-offer sprout-${offer.kind}${offer.claimed ? ' claimed' : ''}" data-sprout="${index}" title="${detail}" ${disabled ? 'disabled' : ''}><b><span class="sprout-offer-icon" aria-hidden="true">${symbol}</span>${label}</b><small>${detail}</small></button>`;
+      }).join('') || '<span class="hud-empty">灵力达到阈值后抽芽</span>';
+      offers.dataset.signature = signature;
+    }
+    if (!offers.dataset.bound) {
+      offers.addEventListener('click', event => {
+        const button = event.target.closest('[data-sprout]');
+        if (button) claimGermination(Number(button.dataset.sprout));
+      });
+      offers.dataset.bound = 'true';
+    }
   }
   const reroll = $('sproutRefresh');
-  if (reroll) { reroll.disabled = running || coins < 20 || !germinationOffers.length; reroll.onclick = refreshGermination; }
+  if (reroll) {
+    reroll.disabled = running || Boolean(pendingEvolution) || coins < 20 || !germinationOffers.some(offer => !offer.claimed);
+    const rerollReason = running ? '战斗中不可转换' : pendingEvolution ? '完成进化选择后可转换' : coins < 20 ? '需要 20 灵力才能转换' : !germinationOffers.some(offer => !offer.claimed) ? '暂无未领取抽芽' : '消耗 20 灵力，互换未领取的灵种与培育，等级不变';
+    reroll.title = rerollReason;
+    reroll.setAttribute('aria-label', rerollReason);
+    reroll.onclick = refreshGermination;
+  }
   const objective = $('mapObjective');
   if (objective) { const remaining = activeMapObjects(); objective.textContent = remaining.length ? `地图目标：${remaining.map(item => `${item.icon}${item.name}`).join(' · ')}` : '地图目标：全部清理'; }
 }
@@ -549,6 +704,26 @@ function updateEvolutionSummary() {
   const activeMarkup = active.map(result => `<span class="bond active" title="${result.definition.desc}"><i>${result.definition.icon}</i><b>${result.definition.name}</b><small>${result.count} · ${synergyEffectText(result.tier, amplification)}</small></span>`).join('');
   const upcomingMarkup = upcoming.map(result => `<span class="bond" title="${result.definition.desc}"><i>${result.definition.icon}</i><b>${result.definition.name}</b><small>${result.count}/${result.nextTier.count}</small></span>`).join('');
   summary.innerHTML = `<div class="formation-bonds"><div><b>阵容羁绊</b><small>${active.length ? `${active.length} 项生效${amplification > 1 ? ' · 共生强化' : ''}` : '尚未成阵'}</small></div><div class="bond-list">${activeMarkup || upcomingMarkup || '<span class="bond-empty">进化不同形态以组成羁绊</span>'}</div>${active.length && upcomingMarkup ? `<div class="bond-preview">临近激活 ${upcomingMarkup}</div>` : ''}</div><div class="discovery-record"><b>进化发现 ${nodes.length} · 隐藏塔 ${hiddenFusions.length - undiscovered.length}/${hiddenFusions.length}</b><small>${nodes.length ? nodes.map(node => `${node.icon} ${node.name}`).join(' · ') : 'Lv.5 选择主路线，Lv.10 解锁分支'}</small><em>古碑残句：${clue}</em></div>`;
+}
+function updateBattleCoach() {
+  const coach = $('battleCoach');
+  if (!coach) return;
+  const firstWave = wave === 1 && !started && !running && !gameWon;
+  const hasReserve = Object.values(reserve || {}).some(count => count > 0) || standbyReserve.length > 0;
+  const shouldShow = firstWave || (!running && !gameWon && towers.length <= 1);
+  coach.hidden = !shouldShow;
+  if (!shouldShow) return;
+  let signature = hasReserve ? 'ready' : 'empty';
+  if (pendingDeployLevel || pendingDeployTowerIndex !== null) signature = 'deploy';
+  const markup = signature === 'empty'
+    ? '<strong>准备你的第一座守卫</strong><span>先领取抽芽，点击地图上的发光格部署守卫。</span>'
+    : signature === 'deploy'
+      ? '<strong>正在部署</strong><span>点击地图上的发光圆环放下守卫，然后点击“开始冒险”。</span>'
+      : '<strong>新手路线</strong><span>① 领取灵种　② 点击发光格部署　③ 点击“开始冒险”　④ 同形态守卫可合成升级。</span>';
+  if (coach.dataset.signature !== signature) {
+    coach.innerHTML = markup;
+    coach.dataset.signature = signature;
+  }
 }
 function pointAt(distance, path = currentPath()) {
   let left = distance;
@@ -576,10 +751,15 @@ function addEnemy() {
       ? (wave % 10 === 0 ? 'ashenStag' : 'groveTyrant')
       : null;
   const roster = waveDefinition?.roster?.length ? waveDefinition.roster : ((wave % 5 === 0 || threat?.finale) && spawned === 0 ? [] : (threat?.roster || []));
-  const enemy=spawnDirector.create({
+  const planned = gameSession.isFinite ? waveDefinition.spawnPlan[spawned] : null;
+  const hpScale = (38 + wave * 20 + spawned * 2.5) * (currentWaveEvent?.enemyHp || 1) * (waveDefinition?.hpScale || 1) * (threat?.hpScale || 1) * (gameSession.isFinite ? window.campaignModifiers?.hp || 1 : 1) * (missionEffects().hp || 1);
+  const speedScale = enemyTravelSpeed(waveDefinition, threat, eventSpeed);
+  const enemy=planned ? enemyFactory.create({ archetype:planned.archetype, traits:planned.traits,
+    maxHp:hpScale * enemyArchetypes[planned.archetype].hp, baseSpeed:speedScale * enemyArchetypes[planned.archetype].speed, resist
+  }) : spawnDirector.create({
     wave, spawnIndex: spawned,
-    hpScale: (38 + wave * 20 + spawned * 2.5) * (currentWaveEvent?.enemyHp || 1) * (waveDefinition?.hpScale || 1) * (threat?.hpScale || 1),
-    speedScale: enemyTravelSpeed(waveDefinition, threat, eventSpeed),
+    hpScale,
+    speedScale,
     resist, primaryTrait: waveTrait(), neutral, archetype: forcedBoss,
     roster
   });
@@ -588,10 +768,12 @@ function addEnemy() {
   enemy.routeProgress=0;
   Object.assign(enemy,pointAt(0,currentPath(enemy.routeIndex)));
   enemies.push(enemy);
+  if (enemy.type === 'boss') audioBus.cue('boss');
 }
 function rollSummonLevel() {
   const sequence = growthModes[growthMode].sequence;
-  const index = growthCycles.total % sequence.length;
+  const index = growthCycles[growthMode] % sequence.length;
+  growthCycles[growthMode]++;
   growthCycles.total++;
   return sequence[index];
 }
@@ -599,7 +781,7 @@ function compactReserve() {
   let merged = 0;
   // Lv.5 is the first evolution decision. Never auto-combine beyond it.
   for (let level = 1; level < 5; level++) {
-    while ((reserve[level] || 0) >= 2) { reserve[level] -= 2; reserve[level + 1] = (reserve[level + 1] || 0) + 1; merged++; }
+    while ((reserve[level] || 0) >= 2) { reserve[level] -= 2; reserve[level + 1] = (reserve[level + 1] || 0) + 1; merged++; campaignRun?.record('merge'); }
     if (!reserve[level]) delete reserve[level];
   }
   return merged;
@@ -656,27 +838,27 @@ function battlefieldMergeCount(sourceTowers = towers) {
 }
 function mergeOpportunityCount() { return reserveMergeCount() + battlefieldMergeCount(); }
 function beginDeploy(level) {
-  if (!(reserve[level] > 0)) return;
+  if (!(reserve[level] > 0)) { audioBus.cue('deny'); return; }
   pendingDeployTowerIndex = null;
-  pendingDeployLevel = pendingDeployLevel === level ? null : level; deployHover = null; selectedTower = null; selectedEnemy = null;
+  pendingDeployLevel = pendingDeployLevel === level ? null : level; deployHover = null; selectedTower = null; selectedEnemy = null; audioBus.cue('select');
   $('message').textContent = pendingDeployLevel ? `部署 Lv.${level} 灵种：点击地图上的绿色空格。` : '已取消灵种部署。'; ui();
 }
 function beginDeployStandby(index) {
-  if (!standbyReserve[index]) return;
+  if (!standbyReserve[index]) { audioBus.cue('deny'); return; }
   pendingDeployLevel = null;
   pendingDeployTowerIndex = pendingDeployTowerIndex === index ? null : index;
   deployHover = null; selectedTower = null; selectedEnemy = null;
-  const state = standbyReserve[index];
+  const state = standbyReserve[index]; audioBus.cue('select');
   $('message').textContent = pendingDeployTowerIndex !== null ? `部署 ${evolution[state.evo].name} Lv.${state.level}：点击地图上的绿色空格。` : '已取消塔位部署。';
   ui();
 }
 function deployReserve(col, row) {
   const deployingStandby = pendingDeployTowerIndex !== null;
-  if ((!pendingDeployLevel || !(reserve[pendingDeployLevel] > 0)) && (!deployingStandby || !standbyReserve[pendingDeployTowerIndex])) return false;
+  if ((!pendingDeployLevel || !(reserve[pendingDeployLevel] > 0)) && (!deployingStandby || !standbyReserve[pendingDeployTowerIndex])) { audioBus.cue('deny'); return false; }
   const occupant = towers.find(tower => tower.col === col && tower.row === row);
   if (!deployingStandby && occupant) {
     const seed = towerFactory.create({ col, row, level: pendingDeployLevel });
-    if (!canMergeTowers(occupant, seed)) { $('message').textContent = '该塔与灵种等级或形态不同，不能直接合并。'; return true; }
+    if (!canMergeTowers(occupant, seed)) { audioBus.cue('deny'); $('message').textContent = '该塔与灵种等级或形态不同，不能直接合并。'; return true; }
     const level = pendingDeployLevel;
     reserve[level]--; if (!reserve[level]) delete reserve[level];
     lastMergeSnapshot = null;
@@ -687,13 +869,16 @@ function deployReserve(col, row) {
     ui();
     return true;
   }
-  if (towers.length >= DEPLOY_LIMIT) { $('message').textContent = `编队已满。可将同级灵种直接点到场上普通塔完成合并，或先撤回一座塔。`; return true; }
-  if (isRoad(col,row) || occupant || mapObjectAt(col,row)) { $('message').textContent = mapObjectAt(col,row) ? '该位置仍有地图目标，请先清理它。' : '这里无法部署，请选择发光的安全地块。'; return true; }
+  if (towers.length >= DEPLOY_LIMIT) { audioBus.cue('deny'); $('message').textContent = `编队已满。可将同级灵种直接点到场上普通塔完成合并，或先撤回一座塔。`; return true; }
+  if (isRoad(col,row) || occupant || mapObjectAt(col,row)) { audioBus.cue('deny'); $('message').textContent = mapObjectAt(col,row) ? '该位置仍有地图目标，请先清理它。' : '这里无法部署，请选择发光的安全地块。'; return true; }
   const placedLevel = pendingDeployLevel;
+  const recalled = deployingStandby && Boolean(standbyReserve[pendingDeployTowerIndex].campaignRecalled);
   const tower = deployingStandby
-    ? towerFactory.create({ ...standbyReserve[pendingDeployTowerIndex], col, row, cool: 0 })
+    ? towerFactory.create({ ...standbyReserve[pendingDeployTowerIndex], col, row })
     : towerFactory.create({ col, row, level: pendingDeployLevel });
+  if (running) relocateDuringBattle(tower);
   towers.push(tower);
+  campaignRun?.record('deploy', { recalled });
   if (deployingStandby) standbyReserve.splice(pendingDeployTowerIndex, 1);
   else { reserve[placedLevel]--; if (!reserve[placedLevel]) delete reserve[placedLevel]; }
   selectedTower = tower; selectedEnemy = null; audioBus.merge();
@@ -713,6 +898,7 @@ function deployReserve(col, row) {
   return true;
 }
 function processGrowth() {
+  germinationOffers = germinationOffers.filter(offer => !offer.claimed);
   const produced = [];
   while (coins >= growthModes[growthMode].threshold && germinationOffers.filter(offer => !offer.claimed).length < 3) {
     coins -= growthModes[growthMode].threshold;
@@ -728,21 +914,32 @@ function processGrowth() {
 function gainSpirit(amount, sourceTower = null) {
   const eventBoost = currentWaveEvent?.spirit || 1, modeBoost = growthModes[growthMode].absorb;
   const bonus = sourceTower ? formationCombatModifiers(sourceTower).spiritBonus : 0;
-  coins += Math.max(0, Math.round(amount * eventBoost * modeBoost + bonus));
+  coins += Math.max(0, Math.round(amount * eventBoost * modeBoost * (missionEffects().spirit || 1) + bonus));
   processGrowth();
 }
+const REDEPLOY_SECONDS = 2;
+function relocateDuringBattle(tower) {
+  // Moving cancels attacks that have not launched. Projectiles already in flight remain valid.
+  tower.attackAnimation = null;
+  tower.queuedAttack = null;
+  attackEvents = attackEvents.filter(event => event.tower !== tower || event.resolved);
+  tower.cool = Math.max(tower.cool || 0, REDEPLOY_SECONDS);
+}
 function recallSelectedTower() {
-  if (!selectedTower || pendingEvolution) { $('message').textContent = '请先选择一座要撤回的塔，并完成当前进化选择。'; return; }
-  const tower = selectedTower; towers = towers.filter(item => item !== tower); lastMergeSnapshot = null;
-  if (tower.evo === 'base') {
+  if (!selectedTower || pendingEvolution) { audioBus.cue('deny'); $('message').textContent = '请先选择一座要撤回的塔，并完成当前进化选择。'; return; }
+  const tower = selectedTower;
+  if (running) relocateDuringBattle(tower);
+  towers = towers.filter(item => item !== tower); lastMergeSnapshot = null;
+  if (tower.evo === 'base' && !running) {
     reserve[tower.level] = (reserve[tower.level] || 0) + 1;
     selectedTower = null; pendingDeployLevel = null; pendingDeployTowerIndex = null;
     $('message').textContent = `Lv.${tower.level} 普通塔已收回灵种仓，是否合成由你决定。`;
   } else {
-    standbyReserve.push(tower.snapshot()); selectedTower = null; pendingDeployLevel = null; pendingDeployTowerIndex = null;
+    standbyReserve.push({ ...tower.snapshot(), campaignRecalled: tower.evo !== 'base' }); selectedTower = null; pendingDeployLevel = null; pendingDeployTowerIndex = null;
+    if (tower.evo !== 'base') campaignRun?.record('recall');
     $('message').textContent = `${evolution[tower.evo].name} Lv.${tower.level} 已进入待命塔仓，进化路线完整保留。`;
   }
-  ui();
+  audioBus.cue('select'); ui();
 }
 function pickRoutes(count = 3) {
   return evolutionTree.choices('primary', null, routes, count);
@@ -783,7 +980,7 @@ function synergyEffectText(tier, amplification = 1) {
   if (tier.spiritBonus) effects.push(`击杀灵力 +${Math.round(tier.spiritBonus * amplification)}`);
   return effects.join(' · ');
 }
-function formationDamageMultiplier(tower) { return formationCombatModifiers(tower).damage * growthCombatModifiers().damage; }
+function formationDamageMultiplier(tower) { return formationCombatModifiers(tower).damage * growthCombatModifiers().damage * (missionEffects().damage || 1); }
 function towerMergeIdentity(tower) { return `${tower.evo}|${tower.evolutionPath || ''}|${tower.evoTier}`; }
 function growthThreshold(level) { return 8 + level * 2; }
 function mergeMaterialValue(tower) { return Math.max(1, Math.ceil(2 + tower.level * 1.25)); }
@@ -806,32 +1003,67 @@ function mergeFeedback(keeper, consumed, beforeLevel, beforeGrowth) {
   return { gained, leveled, beforeLevel, afterLevel: keeper.level, consumedLevel: consumed.level };
 }
 function nextGerminationOffer() {
-  const sequence = growthModes[growthMode].sequence;
-  const level = sequence[growthCycles.total % sequence.length];
-  growthCycles.total++;
-  return Math.random() < .72 ? { kind: 'seed', level } : { kind: 'cultivate', level: Math.max(1, Math.min(5, level)) };
+  // Paid draws follow a stable cadence; changing roots cannot skip another root's grades.
+  const kind = growthCycles.total % 4 === 3 ? 'cultivate' : 'seed';
+  return { kind, level: rollSummonLevel() };
 }
 function claimGermination(index) {
-  if (running || pendingEvolution) return false;
+  if (running || pendingEvolution) { audioBus.cue('deny'); return false; }
   const offer = germinationOffers[index];
-  if (!offer || offer.claimed) return false;
+  if (!offer || offer.claimed) { audioBus.cue('deny'); return false; }
+  const tower = selectedTower;
+  if (offer.kind === 'cultivate' && (!tower || !towers.includes(tower) || tower.level >= MAX_LEVEL || hasUnresolvedEvolution(tower))) {
+    audioBus.cue('deny');
+    $('message').textContent = !tower || !towers.includes(tower) ? '请选择一座场上守卫接受培育，培育资源仍保留。'
+      : tower.level >= MAX_LEVEL ? '该守卫已达满级，请选择其他守卫接受培育。' : '请先完成该守卫的进化，再接受培育。';
+    return false;
+  }
   offer.claimed = true;
-  if (offer.kind === 'seed') reserve[offer.level] = (reserve[offer.level] || 0) + 1;
-  else if (selectedTower && selectedTower.level < MAX_LEVEL) selectedTower.growth = Math.min(growthThreshold(selectedTower.level), (selectedTower.growth || 0) + offer.level);
-  else { offer.kind = 'seed'; reserve[offer.level] = (reserve[offer.level] || 0) + 1; }
-  $('message').textContent = offer.kind === 'seed' ? `抽芽获得 Lv.${offer.level} 灵种。` : `培育完成，${evolution[selectedTower.evo].name} 成长进度提升。`;
+  lastMergeSnapshot = null;
+  if (offer.kind === 'seed') {
+    reserve[offer.level] = (reserve[offer.level] || 0) + 1;
+    $('message').textContent = `抽芽获得 Lv.${offer.level} 灵种。`;
+  } else {
+    const beforeLevel = tower.level;
+    tower.growth += offer.level;
+    while (tower.level < MAX_LEVEL && tower.growth >= growthThreshold(tower.level)) {
+      tower.growth -= growthThreshold(tower.level);
+      tower.level++;
+      if (hasUnresolvedEvolution(tower)) break;
+    }
+    if (tower.level === MAX_LEVEL) { tower.growth = 0; finalWave = true; }
+    if (tower.level > beforeLevel) {
+      tower.cool = 0;
+      const position = center(tower);
+      burst(position.x, position.y, '#ffd35e');
+      if (hits.length < runtime.maxHits) hits.push({ type: 'mergeText', x: position.x, y: position.y - 34, life: 1.45, color: '#ffe07a', label: `培育成长  Lv.${beforeLevel} → Lv.${tower.level}` });
+      screenFlash = Math.max(screenFlash, .22);
+    }
+    $('message').textContent = tower.level > beforeLevel ? `${evolution[tower.evo].name}培育成长至 Lv.${tower.level}。` : `培育完成，${evolution[tower.evo].name} 成长 +${offer.level}，当前 ${tower.growth}/${growthThreshold(tower.level)}。`;
+    const stage = evolutionTree.stageFor(tower);
+    if (stage) {
+      pendingDeployLevel = null; pendingDeployTowerIndex = null; deployHover = null;
+      pendingEvolution = tower; pendingEvolutionStage = stage; openEvolution(stage);
+      $('message').textContent = `培育达到 Lv.${tower.level}，请选择${stage === 'primary' ? '进化主路线' : '专属分支'}。`;
+    }
+  }
+  audioBus.cue('reward');
+  processGrowth();
   ui(); return true;
 }
 function refreshGermination() {
-  if (running || coins < 20 || !germinationOffers.length) return false;
-  coins -= 20; germinationOffers = [nextGerminationOffer(), nextGerminationOffer(), nextGerminationOffer()];
-  $('message').textContent = '消耗 20 灵力重抽抽芽选项。'; ui(); return true;
+  const unclaimed = germinationOffers.filter(offer => !offer.claimed);
+  if (running || pendingEvolution || coins < 20 || !unclaimed.length) { audioBus.cue('deny'); return false; }
+  coins -= 20;
+  germinationOffers = unclaimed.map(offer => ({ kind: offer.kind === 'seed' ? 'cultivate' : 'seed', level: offer.level }));
+  $('message').textContent = '消耗 20 灵力，将未领取的灵种与培育互换，资源等级保持不变。'; audioBus.cue('reward'); ui(); return true;
 }
 function mergeTowers(keeper, consumed) {
   if (!keeper || !consumed) return false;
   if (consumed.level > keeper.level && canMergeTowers(consumed, keeper)) [keeper, consumed] = [consumed, keeper];
   const beforeLevel = keeper.level, beforeGrowth = keeper.growth || 0;
   if (!keeper.absorb(consumed, mergeRules())) return false;
+  campaignRun?.record('merge');
   towers = towers.filter(tower => tower !== consumed);
   selectedTower = keeper; selectedEnemy = null; audioBus.merge();
   const result = mergeFeedback(keeper, consumed, beforeLevel, beforeGrowth);
@@ -894,11 +1126,17 @@ function statusText(target, label, color) {
 }
 function applyEnemyStatus(target, key, duration, source = null) {
   const sourceModifiers = source ? formationCombatModifiers(source) : null;
-  const adjustedDuration = duration * (sourceModifiers?.statusDuration || 1);
-  if (typeof target.applyStatus === 'function') return target.applyStatus(key, adjustedDuration, source);
+  const control = ['slow', 'silence', 'freeze', 'stun', 'knockback'].includes(key);
+  const adjustedDuration = duration * (sourceModifiers?.statusDuration || 1) * (control ? missionEffects().controlDuration || 1 : 1);
+  if (typeof target.applyStatus === 'function') {
+    const applied = target.applyStatus(key, adjustedDuration, source);
+    if (['slow', 'silence', 'freeze', 'stun', 'knockback'].includes(key)) campaignRun?.record('control', { enemy: target, applied: applied > 0 });
+    return applied;
+  }
   const adjusted = adjustedDuration * (['slow','silence','freeze'].includes(key) ? 1 - (target.slowResist || 0) : 1);
   target[key] = Math.max(target[key] || 0, adjusted);
   if (source) target[`${key}Source`] = source;
+  if (['slow', 'silence', 'freeze', 'stun', 'knockback'].includes(key)) campaignRun?.record('control', { enemy: target, applied: adjusted > 0 });
   return adjusted;
 }
 function damageTarget(t, target, z) {
@@ -925,7 +1163,7 @@ function damageTarget(t, target, z) {
   const fieldDamage = field.bonus.includes(branch) ? field.damage : 1;
   const formation = formationCombatModifiers(t);
   const bossMultiplier = target.type === 'boss' ? 1 + formation.bossDamage : 1;
-  const rawDamage = z.damage * t.level * fieldDamage * formationDamageMultiplier(t) * bossMultiplier * (towerSlotEffect(t)?.damage||1);
+  const rawDamage = z.damage * t.level * fieldDamage * formationDamageMultiplier(t) * bossMultiplier * (towerSlotEffect(t)?.damage||1) * (gameSession.isFinite ? window.campaignModifiers?.damage || 1 : 1) * (bossEncounters?.damageMultiplier(target) || 1);
   if (target.shield > 0 && formation.shieldBreak) target._synergyShieldBreak = Math.max(target._synergyShieldBreak || 0, formation.shieldBreak);
   if (target.armor > 0 && formation.armorBreak) target._synergyArmorBreak = Math.max(target._synergyArmorBreak || 0, formation.armorBreak);
   if (typeof target.receiveDamage === 'function') target.receiveDamage(rawDamage, branch, z.attackMode);
@@ -937,24 +1175,26 @@ function damageTarget(t, target, z) {
   target.hitFromX = center(t).x;
   if (hits.length < runtime.maxHits) hits.push({ type: 'damageText', x: target.x + (Math.random() - .5) * 12, y: target.y - target.radius - 5, life: .78, color: z.effect === 'burn' ? '#ff9b45' : z.effect === 'freeze' ? '#bff6ff' : '#fff4bb', label: `-${Math.max(1, Math.round(rawDamage))}` });
   if ('dist' in target) {
-    if (z.effect === 'slow') { if (!(target.slow > .3)) statusText(target, '减速', '#8cecff'); applyEnemyStatus(target, 'slow', 3.2); }
+    if (z.effect === 'slow') { if (!(target.slow > .3)) statusText(target, '减速', '#8cecff'); applyEnemyStatus(target, 'slow', 3.2, t); }
     if (z.effect === 'burn') { if (!(target.burn > .3)) statusText(target, '燃烧', '#ff9b45'); applyEnemyStatus(target, 'burn', 5, t); }
-    if (z.effect === 'weaken') { if (!(target.weaken > .3)) statusText(target, '破甲', '#d9c36f'); applyEnemyStatus(target, 'weaken', 5); }
+    if (z.effect === 'weaken') { if (!(target.weaken > .3)) statusText(target, '破甲', '#d9c36f'); applyEnemyStatus(target, 'weaken', 5, t); }
     if (z.effect === 'stun' && Math.random() < (t.evo === 'earth' ? .55 : .34)) {
       if (!(target.stun > .2)) statusText(target, '眩晕!', '#ffe467');
-      applyEnemyStatus(target, 'stun', t.evo === 'earth' ? 1.4 : 1);
-      if (t.evo === 'earth') { target.dist = Math.max(0, target.dist - 78); applyEnemyStatus(target, 'knockback', 1); statusText(target, '击退', '#ffd08a'); }
+      applyEnemyStatus(target, 'stun', t.evo === 'earth' ? 1.4 : 1, t);
+      if (t.evo === 'earth' && applyEnemyStatus(target, 'knockback', 1, t) > 0) { target.dist = Math.max(0, target.dist - 78); statusText(target, '击退', '#ffd08a'); }
     }
-    if (z.effect === 'silence') { if (!(target.silence > .3)) statusText(target, '压制', '#c3a8ff'); applyEnemyStatus(target, 'silence', 3); applyEnemyStatus(target, 'slow', 3); }
-    if (z.effect === 'freeze') { if (!(target.freeze > .3)) statusText(target, '冻结!', '#d8fbff'); applyEnemyStatus(target, 'freeze', 3.8); applyEnemyStatus(target, 'slow', 3.8); applyEnemyStatus(target, 'stun', 1.25); }
+    if (z.effect === 'silence') { if (!(target.silence > .3)) statusText(target, '压制', '#c3a8ff'); applyEnemyStatus(target, 'silence', 3, t); applyEnemyStatus(target, 'slow', 3, t); }
+    if (z.effect === 'freeze') { if (!(target.freeze > .3)) statusText(target, '冻结!', '#d8fbff'); applyEnemyStatus(target, 'freeze', 3.8, t); applyEnemyStatus(target, 'slow', 3.8, t); }
     if (z.effect === 'poison') { if (!(target.poison > .3)) statusText(target, '中毒', '#9bea62'); applyEnemyStatus(target, 'poison', 6, t); }
-    if (z.effect === 'fiveElements') { applyEnemyStatus(target,'slow',3.5);applyEnemyStatus(target,'burn',5,t);applyEnemyStatus(target,'weaken',6);if(Math.random()<.45)applyEnemyStatus(target,'stun',1.1);statusText(target,'五行侵蚀','#fff0a0'); }
-    if (z.effect === 'taiji') { applyEnemyStatus(target, 'taiji', 6); applyEnemyStatus(target, 'slow', 3); statusText(target, '易伤', '#f1e8ff'); }
+    if (z.effect === 'fiveElements') { applyEnemyStatus(target,'slow',3.5,t);applyEnemyStatus(target,'burn',5,t);applyEnemyStatus(target,'weaken',6,t);if(Math.random()<.45)applyEnemyStatus(target,'stun',1.1,t);statusText(target,'五行侵蚀','#fff0a0'); }
+    if (z.effect === 'taiji') { applyEnemyStatus(target, 'taiji', 6, t); applyEnemyStatus(target, 'slow', 3, t); statusText(target, '易伤', '#f1e8ff'); }
   }
-  if (branchOf[t.evo] === 'water' && 'dist' in target) applyEnemyStatus(target, 'slow', 3.2);
+  if (branchOf[t.evo] === 'water' && 'dist' in target) applyEnemyStatus(target, 'slow', 3.2, t);
   if (target.hp > 0 || target.dead) return;
   target.dead = true;
-  combo = comboTimer > 0 ? combo + 1 : 1; comboTimer = 2.2; const comboBonus = 1 + Math.min(.5, Math.floor(combo / 5) * .1); const rewardScale = (currentWaveEvent?.reward || 1) * currentBattlefield().reward; const enemyReward = target.rewardMultiplier || ({normal:1,elite:2,boss:8}[target.type] || 1); gainSpirit((10 + wave) * enemyReward * rewardScale + (towerSlotEffect(t)?.spiritBonus||0), t); score += Math.round(100 * t.level * enemyReward * comboBonus); kills++; surgeCharge = Math.min(100, surgeCharge + (target.type === 'boss' ? 35 : target.type === 'elite' ? 18 : 9)); if(combo>1&&hits.length<runtime.maxHits)hits.push({type:'text',x:target.x,y:target.y-20,life:1,color:'#fff3a6',label:`${combo} 连击`});
+  campaignRun?.record('kill', { enemy: target, lineage: branch, surge: Boolean(target.campaignSurgeHit) });
+  combo = comboTimer > 0 ? combo + 1 : 1; comboTimer = 2.2; const comboBonus = 1 + Math.min(.5, Math.floor(combo / 5) * .1); const rewardScale = (currentWaveEvent?.reward || 1) * currentBattlefield().reward; const enemyReward = target.rewardMultiplier || ({normal:1,elite:2,boss:8}[target.type] || 1); gainSpirit((10 + wave) * enemyReward * rewardScale + (towerSlotEffect(t)?.spiritBonus||0), t); score += Math.round(100 * t.level * enemyReward * comboBonus); kills++; if (!target.campaignSurgeHit) surgeCharge = Math.min(100, surgeCharge + (target.type === 'boss' ? 35 : target.type === 'elite' ? 18 : 9)); if(combo>1&&hits.length<runtime.maxHits)hits.push({type:'text',x:target.x,y:target.y-20,life:1,color:'#fff3a6',label:`${combo} 连击`});
+  observeCampaign();
 }
 function launchProjectiles(tower, targets, definition) {
   const combat = definition.combat || {};
@@ -1056,6 +1296,10 @@ function activeEnemiesNear(x, y, radius) {
   return enemies.filter(enemy => !enemy.dead && enemy.hp > 0 && Math.hypot(enemy.x - x, enemy.y - y) <= radius)
     .sort((left, right) => (right.routeProgress ?? right.dist) - (left.routeProgress ?? left.dist));
 }
+function shadowOrbitTargets(event) {
+  const origin = center(event.tower), radius = currentAttackRadius(event.definition, event.tower);
+  return event.targets.filter(target => target && !target.dead && target.hp > 0 && Math.hypot(target.x - origin.x, target.y - origin.y) < radius);
+}
 function updateAttackEvents(dt) {
   attackEvents.forEach(event => {
     event.age += dt;
@@ -1098,15 +1342,9 @@ function updateAttackEvents(dt) {
         event.nextPulseAt += .16;
       }
     } else if (event.weapon === 'shadowOrbit') {
-      if (!event.hitCooldowns) event.hitCooldowns = new Map();
-      if (event.age >= event.nextPulseAt && event.pulseIndex < 6) {
-        const origin = center(event.tower), victims = activeEnemiesNear(origin.x, origin.y, event.definition.combat?.splashRadius || 58);
-        victims.slice(0, event.definition.combat?.maxTargets || 3).forEach(target => {
-          if ((event.hitCooldowns.get(target) || 0) <= event.age) {
-            resolveAttackPulse(event, target, .18, event.pulseIndex === 0);
-            event.hitCooldowns.set(target, event.age + .24);
-          }
-        });
+      // Four pulses preserve one attack's damage budget across the selected targets.
+      while (event.age >= event.nextPulseAt && event.pulseIndex < 4) {
+        shadowOrbitTargets(event).forEach(target => resolveAttackPulse(event, target, .25, event.pulseIndex === 0));
         event.pulseIndex++;
         event.nextPulseAt += .13;
       }
@@ -1200,14 +1438,18 @@ function towerCombatContext() {
   towers.forEach(tower => {
     const target = tower.manualTarget;
     if (!target) return;
-    if (!structures.includes(target) || Math.hypot(target.x - center(tower).x, target.y - center(tower).y) >= currentAttackRadius(towerCatalog.get(tower.evo), tower)) {
+    const isEnemyTarget = targets.includes(target);
+    const isStructureTarget = structures.includes(target);
+    if ((!isEnemyTarget && !isStructureTarget) || Math.hypot(target.x - center(tower).x, target.y - center(tower).y) >= currentAttackRadius(towerCatalog.get(tower.evo), tower)) {
       tower.manualTarget = null;
       return;
     }
-    target.isStructure = true;
-    target.routeProgress = -1;
-    target.dist = -1;
-    target.receiveDamage = amount => { target.hp -= amount; };
+    if (isStructureTarget) {
+      target.isStructure = true;
+      target.routeProgress = -1;
+      target.dist = -1;
+      target.receiveDamage = amount => { target.hp -= amount; };
+    }
     if (!targets.includes(target)) targets.push(target);
   });
   return {
@@ -1216,7 +1458,7 @@ function towerCombatContext() {
     enemies: targets,
     positionOf: center,
     rangeOf: tower => currentAttackRadius(towerCatalog.get(tower.evo),tower),
-    cooldownMultiplier: tower => formationCombatModifiers(tower).cooldown * growthCombatModifiers().cooldown * (towerSlotEffect(tower)?.cooldown||1),
+    cooldownMultiplier: tower => formationCombatModifiers(tower).cooldown * growthCombatModifiers().cooldown * (towerSlotEffect(tower)?.cooldown||1) * (battleTactics?.cooldownMultiplier(center(tower)) || 1),
     damage: damageTarget,
     visualize: () => {},
     launch: launchAttack
@@ -1384,10 +1626,10 @@ function drawMapObject(structure) {
   ctx.fillStyle = 'rgba(28,44,32,.86)'; roundedRect(-30, -40, 60, 13, 4); ctx.fill();
   ctx.fillStyle = '#fff0b0'; ctx.font = '900 9px Noto Sans SC'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(structure.name, 0, -33.5);
   ctx.fillStyle = 'rgba(26,43,32,.82)'; roundedRect(-27, 29, 54, 6, 3); ctx.fill(); ctx.fillStyle = '#f3bd4e'; roundedRect(-26, 30, 52 * ratio, 4, 2); ctx.fill();
-  ctx.fillStyle = '#ffedaf'; ctx.font = '800 8px Nunito'; ctx.fillText(`+${structure.reward} 灵力`, 0, 44); ctx.restore();
+  ctx.fillStyle = '#ffedaf'; ctx.font = '800 8px Noto Sans SC'; ctx.fillText(`+${structure.reward} 灵力`, 0, 44); ctx.restore();
 }
 function drawManualTargetLinks() {
-  const assignments = towers.filter(tower => tower.manualTarget && activeMapObjects().includes(tower.manualTarget));
+  const assignments = towers.filter(tower => tower.manualTarget && (activeMapObjects().includes(tower.manualTarget) || enemies.includes(tower.manualTarget)));
   if (!assignments.length) return;
   ctx.save(); ctx.setLineDash([5, 7]); ctx.lineWidth = 2; ctx.lineCap = 'round';
   assignments.forEach(tower => {
@@ -1403,6 +1645,7 @@ function drawManualTargetLinks() {
   ctx.restore();
 }
 function drawWorldTree(end) {
+  if (window.WorldRenderer) { window.WorldRenderer.tree(ctx,end,currentBattlefield(),visualClock,runtime.reducedMotion); return; }
   const field=currentBattlefield(),x=Math.min(W-48,end[0]-46),y=end[1],sway=runtime.reducedMotion?0:Math.sin(visualClock*.9)*1.5;
   ctx.save();ctx.translate(x,y);
   ctx.fillStyle='rgba(26,54,33,.28)';ctx.beginPath();ctx.ellipse(0,33,46,13,0,0,Math.PI*2);ctx.fill();
@@ -1491,8 +1734,13 @@ function drawDrillAttack(event) {
 function drawShadowOrbitAttack(event) {
   const origin=attackOrigin(event.tower), progress=Math.min(1,event.age/event.duration), alpha=Math.max(.2,1-progress*.8);
   ctx.save();ctx.globalAlpha=alpha;
-  for(let index=0;index<3;index++){const angle=event.age*5+index*Math.PI*2/3,radius=30+index*7,x=origin.x+Math.cos(angle)*radius,y=origin.y+Math.sin(angle)*radius;ctx.save();ctx.translate(x,y);ctx.rotate(angle+Math.PI/2);ctx.fillStyle='#d9c4ff';ctx.strokeStyle=event.definition.color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-8,5);ctx.lineTo(-4,0);ctx.lineTo(-8,-5);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
-  ctx.strokeStyle=event.definition.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(origin.x,origin.y,38+Math.sin(event.age*8)*4,0,Math.PI*2);ctx.stroke();ctx.restore();
+  shadowOrbitTargets(event).forEach(target => {
+    const radius=(target.radius||14)+10;
+    ctx.strokeStyle=event.definition.color;ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(origin.x,origin.y);ctx.lineTo(target.x,target.y);ctx.stroke();ctx.setLineDash([]);
+    for(let index=0;index<3;index++){const angle=event.age*8+index*Math.PI*2/3,x=target.x+Math.cos(angle)*radius,y=target.y+Math.sin(angle)*radius;ctx.save();ctx.translate(x,y);ctx.rotate(angle+Math.PI/2);ctx.fillStyle='#d9c4ff';ctx.strokeStyle=event.definition.color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-7,4);ctx.lineTo(-3,0);ctx.lineTo(-7,-4);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+    ctx.lineWidth=2;ctx.beginPath();ctx.arc(target.x,target.y,radius,0,Math.PI*2);ctx.stroke();
+  });
+  ctx.restore();
 }
 function drawMeteorAttack(event) {
   const radius=event.definition.combat?.splashRadius||100,pre=event.age<event.impactAt,progress=Math.max(0,Math.min(1,(event.age-event.impactAt)/.3));
@@ -1664,7 +1912,7 @@ function drawFxParticles() {
 function drawEnemyStatuses(enemy, radius) {
   const statuses = [
     [enemy.burn, '火', '#ff7b31'], [enemy.poison, '毒', '#79c94d'], [enemy.freeze, '冰', '#7ee9ff'],
-    [enemy.stun, '晕', '#ffe15b'], [enemy.slow, '缓', '#55cce8'], [enemy.weaken, '破', '#e1bd5e'], [enemy.taiji, '易', '#d9c4ff']
+    [enemy.stun, '晕', '#ffe15b'], [enemy.stunRecovery, '韧', '#b7d3ce'], [enemy.slow, '缓', '#55cce8'], [enemy.weaken, '破', '#e1bd5e'], [enemy.taiji, '易', '#d9c4ff']
   ].filter(([time]) => time > 0);
   if (enemy.freeze > 0) { ctx.fillStyle='rgba(164,244,255,.28)';ctx.strokeStyle='#dffcff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(enemy.x,enemy.y,radius+5,0,Math.PI*2);ctx.fill();ctx.stroke(); }
   if (enemy.burn > 0) { ctx.fillStyle='#ff8a32';for(let i=0;i<3;i++){const a=performance.now()/180+i*2.1;ctx.beginPath();ctx.arc(enemy.x+Math.cos(a)*radius*.7,enemy.y-radius+Math.sin(a)*4,3.5,0,Math.PI*2);ctx.fill()} }
@@ -1837,7 +2085,7 @@ function drawPrimaryEvolutionArt(tower, data, art) {
   };
   if(!layers) { drawImageFrame(art,bodyPose); return; }
   drawImageFrame(layers.base,bodyPose);
-  const drawPart=(layer,part,alpha=1,extra={}) => {
+  const drawPart=(layer,part,alpha=1) => {
     const pose=['leftArm','rightArm','leftBranch','rightBranch','leftFin','rightFin'].includes(part)
       ? modelLimbPose(tower,part.startsWith('left')?'left':'right')
       : modelPartPose(tower,part);
@@ -1848,8 +2096,8 @@ function drawPrimaryEvolutionArt(tower, data, art) {
     ctx.translate(bodyPose.x,bodyPose.y);
     ctx.rotate(bodyPose.rotation);
     ctx.scale(bodyPose.scaleX,bodyPose.scaleY);
-    ctx.translate(pose.x+extra.x+pivotY,pose.y+extra.y+pivotX);
-    ctx.rotate(pose.rotation+extra.rotation);
+    ctx.translate(pose.x+pivotY,pose.y+pivotX);
+    ctx.rotate(pose.rotation);
     ctx.translate(-pivotY,-pivotX);
     ctx.drawImage(layer.canvas,0,0,sourceSize,sourceSize,-artSize/2,artY,artSize,artSize);
     ctx.restore();
@@ -1927,12 +2175,14 @@ function drawTower(tower) {
     ctx.fillStyle='#68472f';ctx.beginPath();ctx.arc(0,-19,17,Math.PI,Math.PI*2);ctx.lineTo(17,-18);ctx.quadraticCurveTo(0,-10,-17,-18);ctx.fill();
     ctx.strokeStyle='#4f3928';ctx.lineWidth=2;for(let x=-10;x<=10;x+=7){ctx.beginPath();ctx.moveTo(x,-23);ctx.lineTo(x+4,-16);ctx.stroke()}
     ctx.fillStyle='#79a94f';ctx.beginPath();ctx.ellipse(11,-28,9,4,-.5,0,Math.PI*2);ctx.fill();drawFace(18);
+  }else if(window.GuardianRenderer?.draw(ctx,tower,data,{lineage:towerBranch(tower),time:visualClock,reducedMotion:runtime.reducedMotion})){
+    // Original vector silhouettes keep every evolved guardian readable offline.
   }else{
     ctx.fillStyle=data.color;ctx.beginPath();ctx.arc(0,-7,23,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=3;ctx.stroke();ctx.font='27px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(data.icon,0,-7);
   }
   if(tower.level>=10){ctx.strokeStyle='#fff2a0';ctx.lineWidth=2;ctx.globalAlpha=.7+.3*Math.sin(visualClock*4);ctx.beginPath();ctx.arc(0,-7,28,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1}
-  ctx.fillStyle='#26382d';roundedRect(-20,22,40,15,7);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 10px Nunito';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`Lv ${tower.level}`,0,29.5);
+  ctx.fillStyle='#26382d';roundedRect(-20,22,40,15,7);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 10px Noto Sans SC';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`Lv ${tower.level}`,0,29.5);
   if (tower.level < MAX_LEVEL && (tower.growth || 0) > 0) {
     const progress = Math.min(1, (tower.growth || 0) / growthThreshold(tower.level));
     ctx.fillStyle='rgba(24,43,31,.82)';roundedRect(-22,40,44,5,3);ctx.fill();
@@ -1948,7 +2198,16 @@ function drawEnemyBody(enemy) {
   const hitScale=enemy.visualHit>0?1.12:1;
   ctx.save();ctx.fillStyle='rgba(39,63,40,.24)';ctx.beginPath();ctx.ellipse(enemy.x,enemy.y+r*.78,r*1.05,flying?4:r*.34,0,0,Math.PI*2);ctx.fill();ctx.translate(enemy.x,enemy.y+lift);ctx.scale(direction*hitScale,hitScale);ctx.rotate(flying?step*.04:step*.025);
   ctx.lineJoin='round';ctx.lineCap='round';
-  if(enemy.archetype==='mossling'){
+  if (['tideArchivist','frostOracle','hollowHeart'].includes(enemy.archetype)) {
+    const colors = { tideArchivist:['#307f99','#a2e7df'], frostOracle:['#678fba','#eff9ff'], hollowHeart:['#40594d','#f1ab68'] }[enemy.archetype];
+    ctx.fillStyle=colors[0];ctx.strokeStyle=colors[1];ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(0,-r-8);ctx.lineTo(r*.8,-r*.25);ctx.lineTo(r*.7,r);ctx.lineTo(0,r*.72);ctx.lineTo(-r*.7,r);ctx.lineTo(-r*.8,-r*.25);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#183934';ctx.beginPath();ctx.ellipse(0,-4,r*.45,r*.6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=colors[1];ctx.beginPath();ctx.arc(0,0,r*.24,0,Math.PI*2);ctx.fill();
+    const rays=enemy.archetype==='hollowHeart'?5:8;
+    for(let i=0;i<rays;i++){const angle=i/rays*Math.PI*2+visualClock*.4;const x=Math.cos(angle)*(r+9),y=Math.sin(angle)*(r+9);ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.fillStyle=colors[1];ctx.fillRect(-3,-6,6,12);ctx.restore();}
+    if(enemy.archetype==='hollowHeart'){ctx.strokeStyle='#b69a62';ctx.lineWidth=4;for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*r*.5,0);ctx.lineTo(side*r,r*.5);ctx.lineTo(side*r*1.2,r*.3);ctx.moveTo(side*r*.6,-r*.3);ctx.lineTo(side*r*.8,-r*1.3);ctx.stroke();}}
+  }else if(enemy.archetype==='mossling'){
     ctx.fillStyle='#5f9d4d';ctx.beginPath();ctx.arc(0,1,r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8fca62';ctx.beginPath();ctx.ellipse(-5,-r+1,9,4,-.7,0,Math.PI*2);ctx.ellipse(5,-r-1,9,4,.7,0,Math.PI*2);ctx.fill();drawFace(r);
     ctx.strokeStyle='#426d3c';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-7,r-2);ctx.lineTo(-10,r+6+step*2);ctx.moveTo(7,r-2);ctx.lineTo(10,r+6-step*2);ctx.stroke();
   }else if(enemy.archetype==='bramblehog'){
@@ -1982,36 +2241,49 @@ function drawEnemyBody(enemy) {
 function draw() {
   const field = currentBattlefield(), paths = currentPaths();
   ctx.clearRect(0, 0, W, H);ctx.save();
-  ctx.fillStyle = field.palette.grass; ctx.fillRect(-10, -10, W+20, H+20);drawGroundTexture();drawBackfieldRoots();drawTerrainFeatures();drawGrid();
+  if (window.WorldRenderer) window.WorldRenderer.ground(ctx,field);
+  else { ctx.fillStyle = field.palette.grass; ctx.fillRect(-10, -10, W+20, H+20);drawGroundTexture(); }
+  drawBackfieldRoots();drawTerrainFeatures();drawGrid();
   ctx.lineCap = 'round'; ctx.lineJoin='round';
   [[66,'rgba(44,72,39,.2)'],[60,field.palette.roadEdge],[48,field.palette.road]].forEach(([width,color])=>{ctx.lineWidth=width;ctx.strokeStyle=color;paths.forEach((path,routeIndex)=>{ctx.save();ctx.globalAlpha=isRouteOpen(routeIndex)?1:.3;ctx.beginPath();path.forEach((point,index)=>index?ctx.lineTo(...point):ctx.moveTo(...point));ctx.stroke();ctx.restore()})});
   paths.forEach(drawPathDetails);drawRouteJunction();drawRitualSite();drawScenery();
   if (pendingDeployLevel || pendingDeployTowerIndex !== null) {
     ctx.save();
     for (let row=0;row<ROWS;row++) for(let col=0;col<COLS;col++) if(!isRoad(col,row)&&!occupied(col,row))drawBuildPad(col,row,'rgba(223,255,174,.13)','rgba(240,255,203,.28)');
-    if(deployHover){const standby=pendingDeployTowerIndex!==null?standbyReserve[pendingDeployTowerIndex]:null,occupant=towers.find(t=>t.col===deployHover.col&&t.row===deployHover.row),seed=!standby&&pendingDeployLevel?towerFactory.create({col:deployHover.col,row:deployHover.row,level:pendingDeployLevel}):null,valid=!isRoad(deployHover.col,deployHover.row)&&(!occupant||canMergeTowers(occupant,seed)),p=center(deployHover);drawBuildPad(deployHover.col,deployHover.row,valid?'rgba(226,255,145,.72)':'rgba(211,65,53,.55)',valid?'#f4ffb5':'#ff9586');ctx.font='26px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(standby?evolution[standby.evo].icon:'🌰',p.x,p.y);ctx.fillStyle='#26382d';ctx.font='bold 10px Nunito';ctx.fillText(occupant&&valid?'合并':`Lv ${standby?standby.level:pendingDeployLevel}`,p.x,p.y+22)}
+    if(deployHover){const standby=pendingDeployTowerIndex!==null?standbyReserve[pendingDeployTowerIndex]:null,occupant=towers.find(t=>t.col===deployHover.col&&t.row===deployHover.row),seed=!standby&&pendingDeployLevel?towerFactory.create({col:deployHover.col,row:deployHover.row,level:pendingDeployLevel}):null,valid=!isRoad(deployHover.col,deployHover.row)&&(!occupant||canMergeTowers(occupant,seed)),p=center(deployHover);drawBuildPad(deployHover.col,deployHover.row,valid?'rgba(226,255,145,.72)':'rgba(211,65,53,.55)',valid?'#f4ffb5':'#ff9586');ctx.font='26px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(standby?evolution[standby.evo].icon:'🌰',p.x,p.y);ctx.fillStyle='#26382d';ctx.font='bold 10px Noto Sans SC';ctx.fillText(occupant&&valid?'合并':`Lv ${standby?standby.level:pendingDeployLevel}`,p.x,p.y+22)}
     ctx.restore();
   }
   drawFusionHint();
   drawManualTargetLinks();
   if(selectedTower&&towers.includes(selectedTower)){const p=drag&&drag.tower===selectedTower?{x:drag.x,y:drag.y}:center(selectedTower),z=evolution[selectedTower.evo],r=currentAttackRadius(z,selectedTower);ctx.save();ctx.fillStyle=z.color+'22';ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=z.color;ctx.lineWidth=3;ctx.stroke();ctx.restore()}
   if(drag){const col=Math.max(0,Math.min(COLS-1,Math.floor(drag.x/CELL))),row=Math.max(0,Math.min(ROWS-1,Math.floor(drag.y/CELL))),other=towers.find(t=>t!==drag.tower&&t.col===col&&t.row===row),valid=!isRoad(col,row)&&(!other||canMergeTowers(other,drag.tower)||canMergeTowers(drag.tower,other));ctx.save();drawBuildPad(col,row,valid?'rgba(229,255,178,.55)':'rgba(205,66,52,.46)',valid?'#f5ffb2':'#ff8a78');ctx.restore()}
+  window.WorldRenderer?.canopy(ctx,field,visualClock,runtime.reducedMotion);
+  window.BossUI?.drawGround(ctx);
   towers.forEach(drawTower);
   enemies.forEach(drawEnemyBody);
   drawAttackEvents();
   drawProjectiles();
   drawFxParticles();
-  hits.forEach(p=>{ctx.save();ctx.globalAlpha=Math.min(1,p.life);if(p.type==='text'||p.type==='statusText'||p.type==='damageText'||p.type==='mergeText'){ctx.fillStyle=p.color;ctx.strokeStyle='rgba(25,35,30,.86)';ctx.lineWidth=p.type==='damageText'?3:4;ctx.font=p.type==='mergeText'?'900 14px Noto Sans SC':p.type==='statusText'?'900 13px Noto Sans SC':p.type==='damageText'?'900 12px Nunito':'900 17px Nunito';ctx.textAlign='center';const rise=p.type==='mergeText'?(1.45-p.life)*24:p.life*18;ctx.strokeText(p.label,p.x,p.y-rise);ctx.fillText(p.label,p.x,p.y-rise)}else if(p.type==='surge'){ctx.strokeStyle='#ffbd45';ctx.lineWidth=18*p.life;ctx.beginPath();ctx.arc(W/2,H/2,(1-p.life)*650,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#fff4a8';ctx.lineWidth=5;ctx.stroke()}else if(p.type==='impact'){const progress=1-p.life,scale=p.radius*(.35+progress*.85);ctx.translate(p.x,p.y);ctx.rotate(progress*1.5);ctx.strokeStyle=p.color;ctx.lineWidth=Math.max(2,6*p.life);ctx.beginPath();ctx.arc(0,0,scale,0,Math.PI*2);ctx.stroke();if(['rocket','meteor','mine'].includes(p.kind)){ctx.globalAlpha=p.life*.65;ctx.fillStyle=p.color+'55';ctx.beginPath();ctx.arc(0,0,scale*.62,0,Math.PI*2);ctx.fill()}for(let i=0;i<4;i++){const a=i*Math.PI/2+progress*2;ctx.beginPath();ctx.moveTo(Math.cos(a)*scale*.7,Math.sin(a)*scale*.7);ctx.lineTo(Math.cos(a)*scale*1.35,Math.sin(a)*scale*1.35);ctx.stroke()}}else{ctx.fillStyle=p.color;ctx.translate(p.x,p.y);ctx.rotate((1-p.life)*5);ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(3,0);ctx.lineTo(0,4);ctx.lineTo(-3,0);ctx.closePath();ctx.fill()}ctx.restore()});
+  hits.forEach(p=>{ctx.save();ctx.globalAlpha=Math.min(1,p.life);if(p.type==='text'||p.type==='statusText'||p.type==='damageText'||p.type==='mergeText'){ctx.fillStyle=p.color;ctx.strokeStyle='rgba(25,35,30,.86)';ctx.lineWidth=p.type==='damageText'?3:4;ctx.font=p.type==='mergeText'?'900 14px Noto Sans SC':p.type==='statusText'?'900 13px Noto Sans SC':p.type==='damageText'?'900 12px Noto Sans SC':'900 17px Noto Sans SC';ctx.textAlign='center';const rise=p.type==='mergeText'?(1.45-p.life)*24:p.life*18;ctx.strokeText(p.label,p.x,p.y-rise);ctx.fillText(p.label,p.x,p.y-rise)}else if(p.type==='surge'){ctx.strokeStyle='#ffbd45';ctx.lineWidth=18*p.life;ctx.beginPath();ctx.arc(W/2,H/2,(1-p.life)*650,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#fff4a8';ctx.lineWidth=5;ctx.stroke()}else if(p.type==='impact'){const progress=1-p.life,scale=p.radius*(.35+progress*.85);ctx.translate(p.x,p.y);ctx.rotate(progress*1.5);ctx.strokeStyle=p.color;ctx.lineWidth=Math.max(2,6*p.life);ctx.beginPath();ctx.arc(0,0,scale,0,Math.PI*2);ctx.stroke();if(['rocket','meteor','mine'].includes(p.kind)){ctx.globalAlpha=p.life*.65;ctx.fillStyle=p.color+'55';ctx.beginPath();ctx.arc(0,0,scale*.62,0,Math.PI*2);ctx.fill()}for(let i=0;i<4;i++){const a=i*Math.PI/2+progress*2;ctx.beginPath();ctx.moveTo(Math.cos(a)*scale*.7,Math.sin(a)*scale*.7);ctx.lineTo(Math.cos(a)*scale*1.35,Math.sin(a)*scale*1.35);ctx.stroke()}}else{ctx.fillStyle=p.color;ctx.translate(p.x,p.y);ctx.rotate((1-p.life)*5);ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(3,0);ctx.lineTo(0,4);ctx.lineTo(-3,0);ctx.closePath();ctx.fill()}ctx.restore()});
   ctx.restore();
   if(screenFlash>0){ctx.fillStyle=`rgba(255,226,116,${screenFlash*.38})`;ctx.fillRect(0,0,W,H)}
+  window.TacticsUI?.draw(ctx);
+  window.BossUI?.drawStatus(ctx);
+}
+function surgeDamageRatio() {
+  return gameSession.isFinite && window.campaignModifiers?.difficulty === 'veteran' ? .165 : .28;
 }
 function unleashSurge() {
-  if (surgeCharge < 100 || paused) return;
+  if (surgeCharge < 100 || paused) { audioBus.cue('deny'); return; }
   const targets = enemies.filter(enemy => !enemy.dead);
-  if (!targets.length) { $('message').textContent = '当前没有可打击的目标。'; return; }
+  if (!targets.length) { audioBus.cue('deny'); $('message').textContent = '当前没有可打击的目标。'; return; }
   surgeCharge = 0; screenFlash = 1; hits.push({type:'surge',life:1}); audioBus.play(110,.5,'sawtooth',.05); audioBus.play(440,.7,'sine',.035);
-  const source = selectedTower || towers[0];
-  targets.forEach(enemy => { if (typeof enemy.receiveDamage === 'function') enemy.receiveDamage(enemy.max * .28, 'base'); else enemy.hp -= enemy.max * .28; applyEnemyStatus(enemy, 'stun', 1.2); burst(enemy.x,enemy.y,'#ffbd45'); if(enemy.hp<=0) damageTarget(source,enemy,{...evolution[source.evo],damage:0}); });
+  const source = selectedTower || towers[0] || towerFactory.create({ col: 0, row: 0 });
+  // Veteran reserves more of the damage budget for army growth and counters;
+  // its health increase must not also buff this percentage-based emergency.
+  // A surge lethal still awards spirit/score/objectives but cannot recharge
+  // the very same ability and turn a dense wave into repeated free casts.
+  targets.forEach(enemy => { const damage=enemy.max*surgeDamageRatio()*(missionEffects().surgePower||1);if (typeof enemy.receiveDamage === 'function') enemy.receiveDamage(damage, 'base'); else enemy.hp -= damage; applyEnemyStatus(enemy, 'stun', 1.2); burst(enemy.x,enemy.y,'#ffbd45'); if(enemy.hp<=0) { enemy.campaignSurgeHit = true; damageTarget(source,enemy,{...evolution[source.evo],damage:0,effect:null}); } });
   score += targets.length * 60; $('message').textContent = `橙光席卷战场，命中 ${targets.length} 个目标！`; ui();
 }
 function drawFallback() {
@@ -2022,25 +2294,60 @@ function drawFallback() {
   towers.forEach(tower => { const p = center(tower), data = evolution[tower.evo]; ctx.fillStyle = data.color; ctx.beginPath(); ctx.arc(p.x,p.y,22,0,Math.PI*2); ctx.fill(); const art=hasPrimaryEvolutionArt(tower)&&primaryEvolutionImages[tower.evo]; if(art){ctx.drawImage(art,p.x-30,p.y-37,60,60);}else{ctx.fillStyle='#fff';ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(data.icon,p.x,p.y);} });
   enemies.forEach(enemy => { ctx.fillStyle='#5e6f66';ctx.beginPath();ctx.arc(enemy.x,enemy.y,enemy.radius||14,0,Math.PI*2);ctx.fill(); });
 }
-function completeWave() {
-  running = false;
+function completeWave({ forceWin = false } = {}) {
+  if (gameSession.status !== 'running') return;
   const completedWave = wave;
   const reward = Math.round((gameSession.currentWave?.reward || 20 + wave * 4) * currentBattlefield().reward);
-  gainSpirit(reward);
-  const finaleReady = !gameSession.isFinite && finalWave && finaleRequirementsMet();
+  // Developer tools expose an explicit victory shortcut.  It must remain a
+  // test harness action even when the current debug formation does not yet
+  // satisfy the normal endless final-trial requirements.
+  const finaleReady = !gameSession.isFinite && (forceWin || (finalWave && finaleRequirementsMet()));
   const result = gameSession.completeWave({ finalEvolution: finaleReady });
-  if (result.won) { gameWon = true; $('message').textContent = gameSession.isFinite ? `${gameSession.level.name}完成，甜橙谷的道路继续向前！` : '最终进化守住了甜橙谷，你胜利了！'; $('waveBtn').textContent = '重新开始'; score += 5000; ui(); return; }
+  if (!result.completed) return;
+  running = false;
+  battleTactics?.endWave();
+  bossEncounters?.clearWave();
+  gainSpirit(reward);
+  campaignRun?.record('wave', { number: completedWave });
+  observeCampaign();
+  if (result.won) {
+    gameWon = true;
+    if (gameSession.isFinite) {
+      score += 5000;
+      const runResult = campaignRun.finish({ won: true, score });
+      const record = campaignProgress.markComplete(gameSession.level.key, { score, lives, stars: runResult.stars, waves: gameSession.completedWaves, choice:missionStory?.selected()?.key });
+      window.CampaignSave?.clear();
+      campaignNextLevelKey = campaignProgress.next(gameSession.level.key);
+      $('message').textContent = campaignNextLevelKey
+        ? `${gameSession.level.name}完成！${record?.stars || 1} 星 · 下一关「${contentRegistry.levels.get(campaignNextLevelKey).name}」已解锁。`
+        : `${gameSession.level.name}完成！${record?.stars || 1} 星 · 你已走到守护征程的终点。`;
+      if (!campaignProgress.storageAvailable) $('message').textContent += '当前浏览器未能保存战役进度。';
+      $('waveBtn').textContent = campaignNextLevelKey ? '继续下一关 →' : '返回章节';
+      window.CampaignUI?.result(runResult);
+    } else {
+      $('message').textContent = '最终进化守住了甜橙谷，你胜利了！';
+      $('waveBtn').textContent = '重新开始';
+      score += 5000;
+    }
+    $('waveBtn').disabled = false;
+    ui();
+    renderChapterGrid();
+    return;
+  }
   wave = gameSession.waveNumber;
   const opportunities = mergeOpportunityCount();
   intermissionSummary = opportunities ? `世界树抽芽已准备，当前可合成 ${opportunities} 组` : '世界树抽芽正在积蓄，阵容保持不变';
   if (finalWave && !finaleReady) intermissionSummary += ' · 最终试炼需要两座 Lv.5+ 不同谱系并激活一项羁绊';
-  nextWaveTimer = 4;
+  nextWaveTimer = gameSession.isFinite ? 0 : 4;
   $('waveBtn').disabled = false;
   $('waveBtn').innerHTML = `提前开第 ${wave} 波 <span>▶</span>`;
   const nextThreat = waveThreatHint(gameSession.currentWave);
-  $('message').textContent = `第 ${completedWave} 波结算：${intermissionSummary}${nextThreat ? ` · 下一波 ${nextThreat}` : ''}。${nextWaveTimer.toFixed(1)} 秒后自动开波。`; ui();
+  $('message').textContent = `第 ${completedWave} 波结算：${intermissionSummary}${nextThreat ? ` · 下一波 ${nextThreat}` : ''}。${gameSession.isFinite ? '防线整备中。' : `${nextWaveTimer.toFixed(1)} 秒后自动开波。`}`;
+  ui();
+  if (gameSession.isFinite) window.CampaignUI?.intermission();
 }
 function update(dt) {
+  battleTactics?.tick(dt, tacticsContext());
   visualClock += dt;
   cameraShake = Math.max(0, cameraShake - dt * 22);
   screenFlash = Math.max(0, screenFlash - dt * 2.8);
@@ -2061,28 +2368,52 @@ function update(dt) {
     if (spawned >= waveSize() && enemies.length === 0) completeWave();
   }
   activeMapObjects().forEach(object => { object.visualHit = Math.max(0, (object.visualHit || 0) - dt); });
-  enemies.forEach(enemy => {const route=currentPath(enemy.routeIndex||0),routeLength=enemy.routeLength||pathLength(route);enemy.visualHit=Math.max(0,(enemy.visualHit||0)-dt);enemy.update(dt, {
+  enemies.forEach(enemy => {const route=currentPath(enemy.routeIndex||0),routeLength=enemy.routeLength||pathLength(route);enemy.visualHit=Math.max(0,(enemy.visualHit||0)-dt);
+    enemy.tacticsRootPulse = Math.max(0, (enemy.tacticsRootPulse || 0) - dt);
+    if(running)battleTactics?.enemyEffects(enemy).forEach(effect=>{
+      // Pulsing roots let duration resistance matter even inside the field.
+      if(effect==='slow') { if(enemy.tacticsRootPulse>0)return;enemy.tacticsRootPulse=.45;enemy.applyStatus(effect,.45); }
+      else enemy.applyStatus(effect,.3);
+    });
+    enemy.update(dt, {
     positionAt: distance=>pointAt(distance,route), pathLength: routeLength, enemies,
     onDotLethal: (source, target) => damageTarget(source, target, { ...evolution[source.evo], damage: 0 }),
-    onEscape: target => { lives = gameSession.loseLife(target.lifeCost); ui(); },
+    onEscape: target => {
+      const escaped = target.lifeCost || 1;
+      lives = gameSession.loseLife(escaped);
+      const label = target.definition?.name || '敌人';
+      $('message').textContent = `${label}突破防线，失去 ${escaped} 点生命（剩余 ${lives}）。`;
+      screenFlash = Math.max(screenFlash, .28);
+      ui();
+    },
     onPhaseChange: target => { burst(target.x, target.y, '#ff7b45'); $('message').textContent = `${target.definition.name} 进入第二阶段！`; }
   });enemy.routeProgress=Math.min(1,enemy.dist/routeLength)});
+  advanceBossEncounters(dt);
   updateAttackEvents(dt);
   updateProjectiles(dt);
   updateFxParticles(dt);
   const combatContext = towerCombatContext();
-  towers.forEach(tower => { if (tower.updateCombat(dt, combatContext).length) ui(); });
+  towers.forEach(tower => { const combatDt = bossEncounters ? bossEncounters.combatDelta(tower, dt) : dt; if (combatDt > 0 && tower.updateCombat(combatDt, combatContext).length) ui(); });
   enemies=enemies.filter(e=>!e.dead&&e.hp>0);hits.forEach(p=>{p.life-=dt;if(!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt}});hits=hits.filter(p=>p.life>0);
-  if(lives<=0&&running){running=false;started=false;$('message').textContent='森林失守了，再试一次吧！';$('waveBtn').disabled=false;$('waveBtn').textContent='重新开始'}
+  if(lives<=0&&running){
+    running=false;started=false;nextWaveTimer=0;
+    $('message').textContent='森林失守了，再试一次吧！';$('waveBtn').disabled=false;$('waveBtn').textContent='重新开始';
+    observeCampaign();
+    if (campaignRun) window.CampaignUI?.result(campaignRun.finish({ won: false, score }));
+    ui();
+  }
 }
 function loop(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;if(!paused)update(dt*speed);try{draw()}catch(error){console.error('地图绘制已切换至兼容模式',error);drawFallback()}requestAnimationFrame(loop)}
 function pointerCell(e){const r=canvas.getBoundingClientRect();return{col:Math.max(0,Math.min(COLS-1,Math.floor((e.clientX-r.left)*W/r.width/CELL))),row:Math.max(0,Math.min(ROWS-1,Math.floor((e.clientY-r.top)*H/r.height/CELL)))}}
 function pointerPosition(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
 canvas.addEventListener('pointerdown', e => {
+  if (e.button && e.button !== 0) return;
+  if (gameWon || lives <= 0 || pendingEvolution) return;
   const c = pointerCell(e), p = pointerPosition(e);
   if (pendingDeployLevel || pendingDeployTowerIndex !== null) { deployReserve(c.col, c.row); return; }
   const tower = towers.find(item => item.col === c.col && item.row === c.row);
   if (tower) {
+    audioBus.cue('select');
     selectedEnemy = null;
     selectedTower = tower;
     if (selectedMapObject) {
@@ -2102,6 +2433,7 @@ canvas.addEventListener('pointerdown', e => {
   }
   const object = mapObjectAt(c.col, c.row);
   if (object) {
+    audioBus.cue('select');
     selectedEnemy = null;
     selectedMapObject = object;
     if (selectedTower) {
@@ -2119,11 +2451,41 @@ canvas.addEventListener('pointerdown', e => {
     ui(); return;
   }
   const enemy = [...enemies].reverse().find(item => Math.hypot(item.x - p.x, item.y - p.y) <= item.radius + 7);
-  if (enemy) { selectedEnemy = enemy; selectedTower = null; selectedMapObject = null; ui(); }
+  if (enemy) {
+    audioBus.cue('select');
+    // A selected tower can be given a direct focus order. This makes shielded
+    // elites and bosses controllable targets instead of relying on the default
+    // front-of-lane priority.
+    if (selectedTower && !enemy.dead && enemy.hp > 0) {
+      const inRange = Math.hypot(enemy.x - center(selectedTower).x, enemy.y - center(selectedTower).y) < currentAttackRadius(towerCatalog.get(selectedTower.evo), selectedTower);
+      if (inRange) {
+        selectedTower.manualTarget = enemy;
+        campaignRun?.record('focus', { enemy });
+        selectedEnemy = enemy;
+        selectedMapObject = null;
+        $('message').textContent = `${evolution[selectedTower.evo].name}已锁定${enemy.definition?.name || '敌人'}。`;
+      } else {
+        $('message').textContent = '目标超出射程，请先调整守卫位置。';
+        selectedEnemy = enemy;
+      }
+      ui();
+      return;
+    }
+    selectedEnemy = enemy; selectedTower = null; selectedMapObject = null; ui();
+  } else {
+    audioBus.cue('deny');
+  }
 });
 canvas.addEventListener('pointermove',e=>{if(pendingDeployLevel||pendingDeployTowerIndex!==null){deployHover=pointerCell(e);return}if(!drag)return;const r=canvas.getBoundingClientRect();drag.x=(e.clientX-r.left)*W/r.width;drag.y=(e.clientY-r.top)*H/r.height});
 canvas.addEventListener('pointerleave',()=>{deployHover=null});
-canvas.addEventListener('contextmenu',event=>{if(!pendingDeployLevel&&pendingDeployTowerIndex===null)return;event.preventDefault();pendingDeployLevel=null;pendingDeployTowerIndex=null;deployHover=null;$('message').textContent='已取消部署。';ui()});
+canvas.addEventListener('contextmenu',event=>{
+  if (pendingDeployLevel || pendingDeployTowerIndex !== null) {
+    event.preventDefault(); pendingDeployLevel=null; pendingDeployTowerIndex=null; deployHover=null; audioBus.cue('deny'); $('message').textContent='已取消部署。'; ui(); return;
+  }
+  if (selectedTower?.manualTarget) {
+    event.preventDefault(); selectedTower.manualTarget = null; audioBus.cue('select'); $('message').textContent='已解除目标锁定，恢复默认集火顺序。'; ui();
+  }
+});
 canvas.addEventListener('pointerup', () => {
   if (!drag) return;
   const tower = drag.tower;
@@ -2132,19 +2494,55 @@ canvas.addEventListener('pointerup', () => {
   tower.relocate(col, row);
   const other = towers.find(item => item !== tower && item.col === col && item.row === row);
   if (isRoad(col, row)) {
+    audioBus.cue('deny');
     tower.relocate(drag.origin.col, drag.origin.row);
     $('message').textContent = '道路或地貌障碍上无法部署守卫。';
   } else if (other && mergeTowers(other, tower)) {
     lastMergeSnapshot = null;
   } else if (other) {
+    audioBus.cue('deny');
     tower.relocate(drag.origin.col, drag.origin.row);
     $('message').textContent = towerMergeIdentity(other) !== towerMergeIdentity(tower) ? '只有完全相同形态和分支的守卫才能合成。' : '素材等级不能高于主塔，或主塔已到达等级上限。';
   }
-  if (tower.col !== drag.origin.col || tower.row !== drag.origin.row) { tower.manualTarget = null; lastMergeSnapshot = null; }
+  if (tower.col !== drag.origin.col || tower.row !== drag.origin.row) {
+    tower.manualTarget = null; lastMergeSnapshot = null;
+    if (running && towers.includes(tower)) {
+      relocateDuringBattle(tower);
+      $('message').textContent = `${evolution[tower.evo].name}正在重新架设，${REDEPLOY_SECONDS} 秒后恢复攻击。`;
+    }
+  }
   delete drag.origin; drag = null; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui();
 });
 canvas.addEventListener('pointercancel',()=>{if(!drag)return;drag.tower.col=drag.origin.col;drag.tower.row=drag.origin.row;drag=null;ui()});
-function openEvolution(stage = 'branch') { const primary = stage === 'primary'; evolutionDecision = evolutionTree.begin(pendingEvolution, stage); const choices = evolutionDecision ? evolutionDecision.choices(primary ? routes : (branchKeys[pendingEvolution?.evolutionPath] || [])) : []; const dialog = document.querySelector('.evo-dialog'); const modal = $('evoModal'); const hasRare = choices.some(key => evolution[key].rare); if (!choices.length) { $('message').textContent = '当前进化树没有可用分支。'; return; } if (!modal.classList.contains('show')) evolutionWasPaused = paused; paused = true; $('pauseBtn').textContent = '▶'; $('evoTitle').textContent = primary ? 'Lv.5 · 选择进化主路线' : `Lv.10 · 选择${evolution[pendingEvolution?.evolutionPath]?.name || ''}分支`; $('rareBanner').hidden = !hasRare; dialog.classList.toggle('has-rare', hasRare); $('evoChoices').innerHTML = choices.map(key => { const route = evolution[key]; const rarity = primary ? (route.rare ? '稀有主路线' : '五行主路线') : '专属分支'; const stats = `伤害 ${route.damage} / 等级 · 实际半径 ${(attackRadius(route)/CELL).toFixed(1)} 格 · 攻速 ${(1 / route.rate).toFixed(1)}/秒`; return `<button class="${route.rare ? 'rare-route' : ''}" data-route="${key}" data-route-key="${key}">${route.rare ? '<span class="rare-badge">稀有</span>' : ''}<strong>${route.icon} ${route.name}</strong><small><b>${rarity}</b><br>${route.desc}</small><span class="evo-stats">${stats}</span><span class="evo-effect">${attackModeNames[route.attackMode]} · ${effectNames[route.effect] || '无附加效果'}</span><small>${primary ? 'Lv.10 解锁专属分支' : `终点：${route.ultimate}`}</small></button>`; }).join(''); document.querySelectorAll('[data-route]').forEach(button => button.onclick = () => chooseEvolution(button.dataset.route)); modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
+function offeredEvolutions(stage) {
+  const pool = stage === 'primary' ? routes : (branchKeys[pendingEvolution?.evolutionPath] || []);
+  if (!evolutionDecision) return [];
+  if (!gameSession.isFinite) return evolutionDecision.choices(pool);
+  if (stage !== 'primary') return [...pool];
+  const core = pool.filter(key => !evolution[key].rare), rare = pool.filter(key => evolution[key].rare);
+  // Five common counters are always available; rare access rotates by mission and wave.
+  return rare.length ? [...core, rare[(gameSession.level.missionNumber + wave - 2) % rare.length]] : core;
+}
+function openEvolution(stage = 'branch') {
+  const primary = stage === 'primary';
+  evolutionDecision = evolutionTree.begin(pendingEvolution, stage);
+  const choices = offeredEvolutions(stage);
+  const dialog = document.querySelector('.evo-dialog'), modal = $('evoModal');
+  const hasRare = choices.some(key => evolution[key].rare);
+  if (!choices.length) { $('message').textContent = '当前进化树没有可用分支。'; return; }
+  if (!modal.classList.contains('show')) evolutionWasPaused = paused;
+  paused = true; $('pauseBtn').textContent = '▶';
+  $('evoTitle').textContent = primary ? 'Lv.5 · 选择进化主路线' : `Lv.10 · 选择${evolution[pendingEvolution?.evolutionPath]?.name || ''}分支`;
+  $('rareBanner').hidden = !hasRare;
+  dialog.classList.toggle('has-rare', hasRare);
+  $('evoChoices').innerHTML = choices.map(key => {
+    const route = evolution[key], rarity = primary ? (route.rare ? '稀有主路线' : '五行主路线') : '专属分支';
+    const stats = `伤害 ${route.damage} / 等级 · 实际半径 ${(attackRadius(route)/CELL).toFixed(1)} 格 · 攻速 ${(1 / route.rate).toFixed(1)}/秒`;
+    return `<button class="${route.rare ? 'rare-route' : ''}" data-route="${key}" data-route-key="${key}">${route.rare ? '<span class="rare-badge">稀有</span>' : ''}<strong>${route.icon} ${route.name}</strong><small><b>${rarity}</b><br>${route.desc}</small><span class="evo-stats">${stats}</span><span class="evo-effect">${attackModeNames[route.attackMode]} · ${effectNames[route.effect] || '无附加效果'}</span><small>${primary ? 'Lv.10 解锁专属分支' : `终点：${route.ultimate}`}</small></button>`;
+  }).join('');
+  document.querySelectorAll('[data-route]').forEach(button => button.onclick = () => chooseEvolution(button.dataset.route));
+  modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open');
+}
 function closeEvolution(){ $('evoModal').classList.remove('show');$('evoModal').setAttribute('aria-hidden','true');document.body.classList.remove('modal-open');paused=evolutionWasPaused;$('pauseBtn').textContent=paused?'▶':'Ⅱ'; }
 function chooseEvolution(route){ const t = pendingEvolution; if (!t || !evolutionDecision) return; const stage = pendingEvolutionStage; const result = evolutionDecision.commit(route); if (!result.ok) { $('message').textContent = '这条进化分支当前不可用，请重新选择。'; return; } audioBus.evolve(); discoveredEvolutions.add(route); if (stage === 'primary' && t.level >= 10) { pendingEvolutionStage = 'branch'; openEvolution('branch'); return; } pendingEvolution = null; pendingEvolutionStage = null; evolutionDecision = null; closeEvolution(); $('message').textContent = stage === 'primary' ? `已进化为${evolution[route].name}，Lv.10 时解锁该路线的专属分支。` : `分支已确定：${evolution[t.evo].name}`; tryFiveFusion(); tryTaijiFusion(); tryHiddenFusions(); ui(); }
 function tryHiddenFusions() {
@@ -2159,6 +2557,7 @@ function tryHiddenFusions() {
       towers = towers.filter(tower => !parts.includes(tower));
       Object.assign(anchor, { col, row, evo: recipe.result, evolutionPath: null, evoTier: 1, level, cool: 0 });
       towers.push(anchor); selectedTower = anchor; discoveredEvolutions.add(recipe.result); audioBus.evolve();
+      campaignRun?.record('fusion');
       $('message').textContent = `发现隐藏塔：${evolution[recipe.result].name} Lv.${level}！`;
       return true;
     }
@@ -2186,6 +2585,7 @@ function tryFiveFusion() {
   towers = towers.filter(t => !parts.includes(t));
   anchor.evo = 'fiveSpirit'; anchor.evolutionPath = null; anchor.evoTier = 1; anchor.level = level; anchor.cool = 0;
   towers.push(anchor); selectedTower = anchor; discoveredEvolutions.add('fiveSpirit'); finalWave = finalWave || level === MAX_LEVEL;
+  campaignRun?.record('fusion');
   $('message').textContent = `五行合体成功！五灵塔 Lv.${level} 诞生。`;
   return true;
 }
@@ -2197,6 +2597,7 @@ function tryTaijiFusion() {
     let parts=match(false);if(parts.some(t=>!t))parts=match(true);if(parts.some(t=>!t))continue;
     const level=Math.min(...parts.map(t=>t.level)),anchor=parts[0];
     towers=towers.filter(t=>!parts.includes(t));Object.assign(anchor,{col,row,evo:'taiji',evolutionPath:null,evoTier:1,level,cool:0});towers.push(anchor);selectedTower=anchor;discoveredEvolutions.add('taiji');finalWave=finalWave||level===MAX_LEVEL;
+    campaignRun?.record('fusion');
     $('message').textContent=`阴阳归一！太极塔 Lv.${level} 诞生。`;return true;
   }
   return false;
@@ -2209,6 +2610,7 @@ function autoMerge() {
     reserve: { ...reserve },
     finalWave,
     discoveredEvolutions: [...discoveredEvolutions],
+    campaignStats: campaignRun ? { ...campaignRun.stats } : null,
     fiveAttemptSignature
   };
   const reserveMerged = compactReserve();
@@ -2230,18 +2632,37 @@ function autoMerge() {
   ui();
 }
 function undoAutoMerge() {
-  if (!lastMergeSnapshot || pendingEvolution) return;
+  if (!lastMergeSnapshot || pendingEvolution || running) return;
   towers = lastMergeSnapshot.towers.map(state => towerFactory.create(state));
   reserve = { ...lastMergeSnapshot.reserve };
   finalWave = lastMergeSnapshot.finalWave;
   discoveredEvolutions = new Set(lastMergeSnapshot.discoveredEvolutions);
   fiveAttemptSignature = lastMergeSnapshot.fiveAttemptSignature;
+  if (campaignRun && lastMergeSnapshot.campaignStats) campaignRun.stats = { ...lastMergeSnapshot.campaignStats };
   lastMergeSnapshot = null; selectedTower = null; selectedEnemy = null; pendingDeployLevel = null; pendingDeployTowerIndex = null;
   $('message').textContent = '已撤销上一次一键合成。';
   ui();
 }
-function startWave(){if(!gameSession.startWave())return;started=true;nextWaveTimer=0;intermissionSummary='';wave=gameSession.waveNumber;spawned=0;kills=0;combo=0;comboTimer=0;currentWaveEvent=contentRegistry.events.get(gameSession.currentWave.eventKey);running=true;spawnTimer=0;$('waveBtn').disabled=true;$('waveBtn').textContent='自动波次中';$('waveEvent').innerHTML=`<b>${currentWaveEvent.icon} ${currentWaveEvent.name}</b><small>${currentWaveEvent.desc}</small>`;const traitKey=waveTrait(),trait=traitKey?enemyTraits[traitKey]:null;const threat=waveThreatHint(gameSession.currentWave);$('message').textContent=`第 ${wave} 波${threat ? ` · ${threat}` : ''} · ${currentWaveEvent.name}。`;ui()}
-function startMode(modeKey, levelKey = null){gameSession.reset({modeKey,levelKey,mapKey:gameSession.map.key});resetGame();selectedModeKey=modeKey;if(levelKey)selectedLevelKey=levelKey;if(document.body.dataset)document.body.dataset.mode=modeKey;setText('modeEntryText',gameSession.level?gameSession.level.name:gameSession.mode.name);setText('modeSubtitle',`森林守卫 · ${gameSession.level?.name || gameSession.mode.name}`);$('message').textContent=gameSession.level?`已进入${gameSession.level.name}，共 ${gameSession.level.waves.length} 波`:`已进入${gameSession.mode.name}`;ui();return gameSession.snapshot()}
+function startWave(){
+  if(gameSession.status !== 'preparing' || window.CampaignUI?.canStartWave?.() === false){ audioBus.cue('deny'); return; }
+  window.CampaignSave?.save();
+  if(!gameSession.startWave())return;
+  started=true;nextWaveTimer=0;intermissionSummary='';lastMergeSnapshot=null;
+  wave=gameSession.waveNumber;spawned=0;kills=0;combo=0;comboTimer=0;
+  currentWaveEvent=contentRegistry.events.get(gameSession.currentWave.eventKey);running=true;spawnTimer=0;
+  audioBus.cue('wave');
+  $('waveBtn').disabled=true;$('waveBtn').textContent='自动波次中';
+  $('waveEvent').innerHTML=`<b>${currentWaveEvent.icon} ${currentWaveEvent.name}</b><small>${currentWaveEvent.desc}</small>`;
+  const threat=waveThreatHint(gameSession.currentWave);
+  const dispatches = gameSession.level?.dispatches || [];
+  const dispatch = wave === gameSession.level?.waves.length ? dispatches.at(-1) : dispatches[Math.min(wave - 1, dispatches.length - 2)];
+  $('message').textContent=`${dispatch ? `${dispatch} · ` : ''}第 ${wave} 波${threat ? ` · ${threat}` : ''} · ${currentWaveEvent.name}。`;
+  ui();
+}
+function startMode(modeKey, levelKey = null){
+  if (modeKey === 'campaign' && !campaignProgress.isUnlocked(levelKey)) return { error: 'level-locked', levelKey };
+  gameSession.reset({modeKey,levelKey,mapKey:gameSession.map.key});resetGame();selectedModeKey=modeKey;if(levelKey)selectedLevelKey=levelKey;if(document.body.dataset)document.body.dataset.mode=modeKey;setText('modeEntryText',gameSession.level?gameSession.level.name:gameSession.mode.name);setText('modeSubtitle',`森林守卫 · ${gameSession.level?.name || gameSession.mode.name}`);$('message').textContent=gameSession.level?`${gameSession.level.story || ''} · ${gameSession.level.tactical || ''} · 共 ${gameSession.level.waves.length} 波`:`已进入${gameSession.mode.name}`;ui();return gameSession.snapshot()
+}
 function isDeveloperMode() { return gameSession.mode?.kind === 'developer'; }
 function developerFreeCell() { return currentBattlefield().buildSlots.find(([col, row]) => !occupied(col, row) && !isTerrainBlocked(col, row)); }
 function developerSpawnTower(level, evo = 'base', evolutionPath = null, evoTier = 1) {
@@ -2255,11 +2676,11 @@ function developerSpawnTower(level, evo = 'base', evolutionPath = null, evoTier 
   $('message').textContent = `已生成 ${evolution[evo].name} Lv.${level}。`;
   ui(); return true;
 }
-function developerCompleteWave() {
+function developerCompleteWave(forceWin = false) {
   if (!isDeveloperMode()) return;
   enemies = []; spawned = waveSize(); kills = waveSize();
   if (!gameSession.startWave() && gameSession.status !== 'running') return;
-  running = true; completeWave(); ui();
+  running = true; completeWave({ forceWin }); ui();
 }
 function developerAction(action) {
   if (!isDeveloperMode()) return;
@@ -2271,7 +2692,7 @@ function developerAction(action) {
   if (action === 'clear') { enemies = []; $('message').textContent = '已清空当前敌人。'; ui(); return; }
   if (action === 'complete') { developerCompleteWave(); return; }
   if (action === 'next') { if (running) developerCompleteWave(); if (!running && !gameWon) startWave(); return; }
-  if (action === 'win') { finalWave = true; developerCompleteWave(); }
+  if (action === 'win') { finalWave = true; developerCompleteWave(true); }
 }
 function navigatePage(pageKey) {
   const pages = { hub: $('hubPage'), campaign: $('campaignPage'), battle: $('battlePage') };
@@ -2282,26 +2703,50 @@ function navigatePage(pageKey) {
 function renderChapterGrid() {
   const grid = $('chapterGrid');
   if (!grid) return;
+  setText('campaignProgressCount', `${campaignProgress.completedCount()} / ${contentRegistry.levels.values().length}`);
+  const record = document.querySelector('.campaign-record b');
+  if (record) record.textContent = `${campaignProgress.completedCount()} / ${contentRegistry.levels.values().length}`;
+  const records = campaignProgress.load();
   grid.innerHTML = contentRegistry.levels.values().map((level, index) => {
     const map = contentRegistry.maps.get(level.mapKey), boss = level.waves.at(-1)?.boss;
     const bossName = boss ? enemyArchetypes[boss]?.name || boss : '无';
-    return `<button class="chapter-card" data-chapter="${level.key}" style="--map-grass:${map.palette.grass};--map-road:${map.palette.road};--map-road-edge:${map.palette.roadEdge}"><span class="chapter-map-preview"><span>${map.icon}</span></span><span class="chapter-card-copy"><span class="chapter-index">CHAPTER ${String(index + 1).padStart(2, '0')}</span><h3>${level.name}</h3><p>${map.name} · ${map.desc}</p><span class="chapter-meta"><span>${level.waves.length} 波</span><span>${level.startingLives} 生命</span><span>${bossName}</span></span><em>进入战场 →</em></span></button>`;
+    const completed = campaignProgress.has(level.key), unlocked = campaignProgress.isUnlocked(level.key);
+    const status = completed ? `${'★'.repeat(records[level.key].stars || 1)} · 最佳 ${records[level.key].score || 0} 分 · 再战` : unlocked ? '进入战场 →' : '完成上一关后解锁';
+    return `<button class="chapter-card${completed ? ' is-complete' : ''}${unlocked ? '' : ' is-locked'}" data-chapter="${level.key}" ${unlocked ? '' : 'disabled'} aria-label="${level.name}${unlocked ? '' : '（锁定）'}" style="--map-grass:${map.palette.grass};--map-road:${map.palette.road};--map-road-edge:${map.palette.roadEdge}"><span class="chapter-map-preview"><span>${unlocked ? map.icon : '🔒'}</span><b>${completed ? '✓' : String(index + 1).padStart(2, '0')}</b></span><span class="chapter-card-copy"><span class="chapter-index">ACT ${String(level.chapter || index + 1).padStart(2, '0')} · MISSION ${String(index + 1).padStart(2, '0')}</span><h3>${level.name}</h3><p>${level.story || map.desc}</p><small class="chapter-tactical">战术：${level.tactical || map.desc}</small><span class="chapter-meta"><span>${level.waves.length} 波</span><span>${level.startingLives} 生命</span><span>${bossName}</span></span><em>${status}</em></span></button>`;
   }).join('');
   grid.querySelectorAll('[data-chapter]').forEach(button => button.onclick = () => {
+    if (!campaignProgress.isUnlocked(button.dataset.chapter)) return;
     startMode('campaign', button.dataset.chapter); paused = false; navigatePage('battle');
   });
 }
-function leaveBattle() { paused = true; running = false; gameSession.abandon(); navigatePage('hub'); }
+function leaveBattle() { paused = true; running = false; gameSession.abandon(); renderChapterGrid(); navigatePage('hub'); }
 if ($('fieldBtn')) $('fieldBtn').onclick=()=>{if(running||gameSession.mode.levelRequired)return;const unlocked=battlefields.filter(item=>item.unlock<=wave);if(unlocked.length<2)return;const current=unlocked.indexOf(currentBattlefield());battlefieldIndex=(current+1)%unlocked.length;gameSession.selectMap(currentBattlefield().key);mapObjects=createMapObjects(currentBattlefield());mapUnlockedSlots=new Set();selectedMapObject=null;towers.forEach(tower=>{tower.manualTarget=null});const moved=fitTowersToBattlefield();$('message').textContent=`已切换至${currentBattlefield().name}：${currentBattlefield().desc}${moved?` · ${moved} 座守卫已移至最近安全地块`:''}`;screenFlash=.25;ui()};
-$('waveBtn').onclick=()=>{if(lives<=0||gameWon||gameSession.status==='lost'){resetGame();started=true;startWave();return}if(!running){started=true;startWave()}};
-$('pauseBtn').onclick=()=>{if(!started||gameWon)return;paused=!paused;$('pauseBtn').textContent=paused?'▶':'Ⅱ';$('message').textContent=paused?'游戏已暂停':'游戏继续';ui()};
+$('waveBtn').onclick=()=>{
+  if (gameWon && gameSession.isFinite) {
+    if (campaignNextLevelKey) {
+      const nextLevel = campaignNextLevelKey;
+      startMode('campaign', nextLevel);
+      paused = false;
+      navigatePage('battle');
+      $('message').textContent = `${gameSession.level.story || ''} · ${gameSession.level.tactical || ''} · 共 ${gameSession.level.waves.length} 波`;
+      ui();
+    } else {
+      renderChapterGrid();
+      navigatePage('campaign');
+    }
+    return;
+  }
+  if(lives<=0||gameWon||gameSession.status==='lost'){resetGame();started=true;startWave();return}
+  if(!running){started=true;startWave()}
+};
+$('pauseBtn').onclick=()=>{if(!started||gameWon||pendingEvolution)return;paused=!paused;$('pauseBtn').textContent=paused?'▶':'Ⅱ';$('message').textContent=paused?'游戏已暂停':'游戏继续';ui()};
 $('speedBtn').onclick=()=>{speed=speed===1?2:speed===2?3:1;$('speedBtn').textContent=`${speed}×`};
 $('mergeBtn').onclick=autoMerge;
 $('undoMergeBtn').onclick=undoAutoMerge;
 $('surgeBtn').onclick=unleashSurge;
 $('soundBtn').onclick=()=>{runtime.soundEnabled=!runtime.soundEnabled;$('soundBtn').textContent=runtime.soundEnabled?'🔊':'🔇';if(runtime.soundEnabled)audioBus.play(520,.08,'sine',.03)};
 $('modeEntryBtn').onclick=leaveBattle;
-$('hubEndlessBtn').onclick=()=>{startMode('endless');paused=false;navigatePage('battle')};
+$('hubEndlessBtn').onclick=()=>{startMode('endless');prepareEndlessOpening();paused=false;navigatePage('battle')};
 $('hubCampaignBtn').onclick=()=>navigatePage('campaign');
 if ($('hubDeveloperBtn')) $('hubDeveloperBtn').onclick=()=>{startMode('developer');paused=false;navigatePage('battle')};
 $('campaignBackBtn').onclick=()=>navigatePage('hub');
@@ -2309,7 +2754,14 @@ $('battleBackBtn').onclick=leaveBattle;
 if ($('mapRecallBtn')) $('mapRecallBtn').onclick=recallSelectedTower;
 document.querySelectorAll('[data-dev-action]').forEach(button => button.onclick = () => developerAction(button.dataset.devAction));
 const hubSoundButton=document.querySelector('.hub-sound-btn');if(hubSoundButton)hubSoundButton.onclick=()=>$('soundBtn').click();
-window.addEventListener('keydown',event=>{if(event.key==='Escape'&&(pendingDeployLevel||pendingDeployTowerIndex!==null)){pendingDeployLevel=null;pendingDeployTowerIndex=null;deployHover=null;$('message').textContent='已取消部署。';ui();return}if(event.code==='Space'&&!event.repeat&&!pendingEvolution){event.preventDefault();unleashSurge()}if(event.key.toLowerCase()==='p'&&!event.repeat)$('pauseBtn').click()});
+window.addEventListener('keydown',event=>{
+  const modal = $('storyModal');
+  const editing = node => node?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(node?.tagName) || node?.closest?.('[contenteditable="true"], [contenteditable=""]');
+  if (event.defaultPrevented || document.body.dataset?.page !== 'battle' || (modal && !modal.hidden) || pendingEvolution || editing(event.target) || editing(document.activeElement)) return;
+  if(event.key==='Escape'&&(pendingDeployLevel||pendingDeployTowerIndex!==null)){pendingDeployLevel=null;pendingDeployTowerIndex=null;deployHover=null;$('message').textContent='已取消部署。';ui();return}
+  if(event.code==='Space'&&!event.repeat&&!event.target?.closest?.('button')){event.preventDefault();unleashSurge()}
+  if(event.key.toLowerCase()==='p'&&!event.repeat)$('pauseBtn').click();
+});
 window.GameApp = Object.freeze({
   startMode,
   navigatePage,
@@ -2317,6 +2769,7 @@ window.GameApp = Object.freeze({
   levels: () => contentRegistry.levels.values(),
   maps: () => contentRegistry.maps.values(),
   session: () => gameSession.snapshot(),
+  campaign: () => ({ records: campaignProgress.load(), completed: campaignProgress.completedCount(), recommendedLevelKey: campaignProgress.nextUncompleted(), storageAvailable: campaignProgress.storageAvailable }),
   developer: Object.freeze({ action: developerAction, spawnTower: developerSpawnTower })
 });
 renderChapterGrid();resetGame();ui();navigatePage('hub');requestAnimationFrame(loop);

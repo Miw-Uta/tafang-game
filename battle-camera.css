@@ -1,0 +1,15 @@
+.battle-page .canvas-frame .map-viewport { position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:none;touch-action:none; }
+.map-viewport::-webkit-scrollbar { display:none; }
+.battle-page .map-viewport canvas { max-width:none;height:auto;aspect-ratio:16/9; }
+.map-viewport.panning canvas { cursor:grab; }
+.map-viewport.panning:active canvas { cursor:grabbing; }
+.camera-tools { position:absolute;bottom:10px;right:10px;display:flex;gap:4px;z-index:5;padding:4px;background:#183a31eb;border:1px solid #6b8b72;border-radius:5px; }
+.camera-tools button { display:grid;place-items:center;width:34px;height:34px;border:1px solid transparent;border-radius:3px;background:transparent;color:#e5efe6;padding:0; }
+.camera-tools button:hover:not(:disabled),.camera-tools button[aria-pressed="true"] { background:#446d58;border-color:#82a08b; }
+.camera-tools button:disabled { opacity:.35; }
+.camera-tools svg { width:18px;height:18px; }
+.canvas-frame.zoomed .hint { display:none; }
+@media(max-width:700px) {
+  .camera-tools { bottom:5px;right:5px;gap:2px;padding:2px; }
+  .camera-tools button { width:36px;height:36px; }
+}

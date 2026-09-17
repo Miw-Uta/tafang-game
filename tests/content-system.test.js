@@ -9,7 +9,7 @@ function segmentDistance(x, y, start, end) {
   return Math.hypot(x - (start[0] + dx * progress), y - (start[1] + dy * progress));
 }
 assert.equal(registry.maps.values().length, 4);
-assert.equal(registry.levels.values().length, 3);
+assert.equal(registry.levels.values().length, 20);
 assert.equal(registry.modes.get('developer').kind, 'developer');
 assert.equal(registry.modes.get('developer').levelRequired, false);
 assert.notDeepEqual(registry.maps.get('grove').path, registry.maps.get('wetland').path);

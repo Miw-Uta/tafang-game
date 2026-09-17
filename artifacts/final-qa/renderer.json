@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-09-17T09:28:42.515Z",
+  "fixture": "8 guardians, 60 live enemy objects, rendered attack poses; paused simulation. Headless WSL timing, not minimum hardware certification.",
+  "frames": 180,
+  "badTransforms": [],
+  "cache": [
+    {
+      "key": "fire",
+      "textures": 2,
+      "width": 512,
+      "height": 512,
+      "rgbaBytes": 2097152
+    },
+    {
+      "key": "water",
+      "textures": 6,
+      "width": 512,
+      "height": 512,
+      "rgbaBytes": 6291456
+    },
+    {
+      "key": "wood",
+      "textures": 7,
+      "width": 512,
+      "height": 512,
+      "rgbaBytes": 7340032
+    },
+    {
+      "key": "metal",
+      "textures": 7,
+      "width": 512,
+      "height": 512,
+      "rgbaBytes": 7340032
+    },
+    {
+      "key": "earth",
+      "textures": 6,
+      "width": 512,
+      "height": 512,
+      "rgbaBytes": 6291456
+    }
+  ],
+  "cacheBytes": 29360128,
+  "drawMs": {
+    "p50": 8.199999928474426,
+    "p95": 16.100000023841858,
+    "max": 24
+  },
+  "frameMs": {
+    "p50": 42.39999997615814,
+    "p95": 63.10000002384186,
+    "max": 73.79999995231628
+  },
+  "errors": [],
+  "timingCaveat": "Captured while other browser regressions and desktop packaging ran concurrently; timing is not a single-process performance benchmark."
+}

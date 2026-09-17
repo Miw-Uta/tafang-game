@@ -1,0 +1,42 @@
+name: Desktop candidate builds
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['desktop-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows
+            artifact: |
+              release/*.zip
+              release/*.build.json
+          - os: ubuntu-latest
+            target: linux
+            artifact: |
+              release/*.tar.gz
+              release/*.build.json
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run package:${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orangewood-${{ matrix.target }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 14

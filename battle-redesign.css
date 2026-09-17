@@ -128,6 +128,7 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
 }
 .battle-page .stage-title { min-width: 0; }
 .battle-page .stage-kicker { color: #eaa64a!important; }
+.battle-page .stage-kicker::before { content:'●'; margin-right:5px; color:#e8a43d; }
 .battle-page .stage-head strong { color: #fff8df; font-size: 19px; }
 .battle-page .stage-title #message { color: #9fb3a4; font-size: 9px; }
 .battle-page .field-switch,
@@ -152,10 +153,26 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0,1fr);
-  grid-template-rows: auto minmax(0,1fr);
+  grid-template-rows: auto auto minmax(0,1fr);
   gap: 8px;
   overflow: hidden;
 }
+.battle-coach {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:34px;
+  padding:7px 10px;
+  border:1px solid #d9b66a;
+  border-radius:6px;
+  background:linear-gradient(90deg,#fff5cf,#fffaf0);
+  color:#63451f;
+  font-size:11px;
+  line-height:1.45;
+}
+.battle-coach strong { color:#a45b1f; white-space:nowrap; }
+.battle-coach span { color:#6d604a; }
+.battle-coach kbd { padding:2px 5px; border:1px solid #d5c49a; border-radius:3px; background:#fff; color:#684c29; font:800 10px inherit; }
 .battle-page .map-operations {
   min-height: 76px;
   display: grid;
@@ -211,10 +228,13 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
 .battle-page .compact-shop button:disabled { opacity: .4; cursor: not-allowed; }
 .battle-page .compact-sprouts { grid-area: sprouts; min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr) 28px; align-items: center; gap: 5px; }
 .battle-page .compact-sprouts > small { color: #aebfae; font-size: 8px; font-weight: 900; white-space: nowrap; }
-.battle-page .compact-sprouts > div { min-width: 0; display: flex; gap: 3px; overflow-x: auto; }
-.battle-page .sprout-offer { min-width: 94px; height: 32px; border: 1px solid #527060; border-radius: 4px; background: #274438; color: #dbe6dc; font: 800 8px inherit; cursor: pointer; text-align: left; padding: 3px 5px; }
+.battle-page .compact-sprouts > div { min-width: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; }
+.battle-page .sprout-offer { min-width: 0; width: 100%; height: 38px; border: 1px solid #527060; border-radius: 4px; background: #274438; color: #dbe6dc; font: 800 9px inherit; cursor: pointer; text-align: left; padding: 4px 5px; overflow: hidden; }
 .battle-page .sprout-offer:hover:not(:disabled) { border-color: #f0bd61; background: #355546; }
-.battle-page .sprout-offer small { display: block; color: #aebfae; font-size: 7px; }
+.battle-page .sprout-offer b { display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.battle-page .sprout-offer small { display: block; color: #aebfae; font-size: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.battle-page .sprout-offer-icon { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; background: #9acb87; color: #173b2b; font-size: 9px; flex: none; }
+.battle-page .sprout-cultivate .sprout-offer-icon { background: #f0bd61; color: #4b3216; }
 .battle-page .sprout-offer.claimed { opacity: .35; }
 .battle-page #sproutRefresh { width: 28px; height: 28px; border: 1px solid #66836c; border-radius: 4px; background: #2f4d3b; color: #f4d47c; cursor: pointer; }
 .battle-page #sproutRefresh:disabled { opacity: .4; cursor: not-allowed; }
@@ -330,6 +350,7 @@ body[data-mode="developer"] .battle-page .battle-map-slot .canvas-frame { max-wi
   .battle-page .mode-entry-btn { display: none; }
   .battle-page .stage-wrap { padding: 9px; }
   .battle-page .battle-stage-body { display: flex; flex-direction: column; gap: 8px; }
+  .battle-coach { font-size:10px; min-height:32px; padding:6px 8px; }
   .battle-page .map-operations { grid-template-columns: 110px 160px minmax(145px,1fr) minmax(135px,1fr); max-height: none; }
   .battle-page .battle-map-slot { flex: none; }
   .battle-page .battle-map-slot .canvas-frame { width: 100%; max-width: none; }

@@ -1,0 +1,195 @@
+{
+  "generatedAt": "2026-09-17T09:43:42.639002+00:00",
+  "version": "2.0.0",
+  "runtimeContentVerifiedAgainstPackages": true,
+  "coreSourceHash": "87ff895a75ab772290bab66e50a0268a8ba686271a2fbf59648d624c84ff6f29",
+  "tests": {
+    "passed": 83,
+    "failed": 0
+  },
+  "campaigns": {
+    "story": {
+      "baselineWins": 20,
+      "missions": 20,
+      "losses": [],
+      "legalAlternativeWins": []
+    },
+    "normal": {
+      "baselineWins": 20,
+      "missions": 20,
+      "losses": [],
+      "legalAlternativeWins": []
+    },
+    "veteran": {
+      "baselineWins": 19,
+      "missions": 20,
+      "losses": [
+        {
+          "level": "thornCathedral",
+          "seed": 20260924,
+          "lossTaken": 8
+        }
+      ],
+      "legalAlternativeWins": [
+        {
+          "level": "thornCathedral",
+          "seed": 20260924,
+          "priority": "counter"
+        }
+      ]
+    }
+  },
+  "browser": {
+    "distributionFlowViewports": [
+      [
+        1440,
+        1000
+      ],
+      [
+        768,
+        1024
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "experienceViewports": [
+      [
+        1280,
+        720
+      ],
+      [
+        1440,
+        960
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "tacticsMouseTouchKeyboard": true,
+    "bossWarningDodgeInterrupt": true,
+    "fourEndingsUI": true,
+    "externalRequestsBlockedInDistributionRegression": true
+  },
+  "desktop": {
+    "generatedAt": "2026-09-17T09:33:41.076Z",
+    "electron": "44.4.1",
+    "testedHost": "linux-x64",
+    "packagedExecutable": true,
+    "checks": {
+      "isolatedWindow": true,
+      "offlineAssets": true,
+      "campaignBoot": true,
+      "fullSaveExport": true,
+      "fullSaveImport": true,
+      "importBackup": true,
+      "persistenceAfterReload": true,
+      "popupDenied": true
+    },
+    "pageErrors": [],
+    "packages": {
+      "win": {
+        "file": "Orangewood-2.0.0-win-x64.zip",
+        "bytes": 162015857,
+        "sha256": "defef76d8a4d0ea7d93137956e124119d5adb394e50efb0945bb5814dcf274f5",
+        "nativeBuild": false,
+        "runtimeVerified": false
+      }
+    }
+  },
+  "packages": [
+    {
+      "platform": "win",
+      "version": "2.0.0",
+      "asarEntries": 78,
+      "runtimeDependencyFiles": 0,
+      "sourceFilesVerified": 34,
+      "archive": {
+        "file": "Orangewood-2.0.0-win-x64.zip",
+        "bytes": 162015857,
+        "sha256": "defef76d8a4d0ea7d93137956e124119d5adb394e50efb0945bb5814dcf274f5"
+      },
+      "nativeBuild": false
+    },
+    {
+      "platform": "linux",
+      "version": "2.0.0",
+      "asarEntries": 78,
+      "runtimeDependencyFiles": 0,
+      "sourceFilesVerified": 34,
+      "archive": {
+        "file": "Orangewood-2.0.0-linux-x64.tar.gz",
+        "bytes": 127736090,
+        "sha256": "29c0ca2fe81f404b518738d9860704c610506a6e2a24cbb38a6edba6c8a711d5"
+      },
+      "nativeBuild": true
+    }
+  ],
+  "renderer": {
+    "generatedAt": "2026-09-17T09:28:42.515Z",
+    "fixture": "8 guardians, 60 live enemy objects, rendered attack poses; paused simulation. Headless WSL timing, not minimum hardware certification.",
+    "frames": 180,
+    "badTransforms": [],
+    "cache": [
+      {
+        "key": "fire",
+        "textures": 2,
+        "width": 512,
+        "height": 512,
+        "rgbaBytes": 2097152
+      },
+      {
+        "key": "water",
+        "textures": 6,
+        "width": 512,
+        "height": 512,
+        "rgbaBytes": 6291456
+      },
+      {
+        "key": "wood",
+        "textures": 7,
+        "width": 512,
+        "height": 512,
+        "rgbaBytes": 7340032
+      },
+      {
+        "key": "metal",
+        "textures": 7,
+        "width": 512,
+        "height": 512,
+        "rgbaBytes": 7340032
+      },
+      {
+        "key": "earth",
+        "textures": 6,
+        "width": 512,
+        "height": 512,
+        "rgbaBytes": 6291456
+      }
+    ],
+    "cacheBytes": 29360128,
+    "drawMs": {
+      "p50": 8.199999928474426,
+      "p95": 16.100000023841858,
+      "max": 24
+    },
+    "frameMs": {
+      "p50": 42.39999997615814,
+      "p95": 63.10000002384186,
+      "max": 73.79999995231628
+    },
+    "errors": [],
+    "timingCaveat": "Captured while other browser regressions and desktop packaging ran concurrently; timing is not a single-process performance benchmark."
+  },
+  "knownUnverified": [
+    "Windows native runtime and display scaling",
+    "Independent human enjoyment and difficulty studies",
+    "Professional audio mix listening",
+    "Long-duration and low-end hardware",
+    "Steam account, App ID, submission, review, code signing",
+    "Controller and Steam Deck",
+    "AI generation records and applicable Jimeng service terms"
+  ]
+}

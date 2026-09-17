@@ -130,6 +130,7 @@
       this.eventKey = data.eventKey || 'calm';
       this.traitKey = data.traitKey || null;
       this.roster = freezeArray(data.roster);
+      this.spawnPlan = Object.freeze((data.spawnPlan || []).map(spawn => Object.freeze({ archetype:spawn.archetype, traits:freezeArray(spawn.traits) })));
       this.boss = data.boss || null;
       this.reward = data.reward ?? 20 + number * 4;
       Object.freeze(this);
@@ -213,5 +214,57 @@
     snapshot() { return { modeKey: this.mode.key, levelKey: this.level?.key || null, mapKey: this.map.key, waveNumber: this.waveNumber, lives: this.lives, status: this.status }; }
   }
 
-  return { ContentDefinition, ContentCatalog, MapDefinition, WaveDefinition, LevelDefinition, GameModeDefinition, ContentRegistry, GameSession };
+  class CampaignProgress {
+    constructor(levels, { read = () => null, write = () => {}, now = Date.now } = {}) {
+      this.levels = levels;
+      this.read = read;
+      this.write = write;
+      this.now = now;
+      this.records = {};
+      this.storageAvailable = true;
+      try {
+        const saved = JSON.parse(this.read() || '{}');
+        if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+          for (const key of this.order()) {
+            const record = saved[key];
+            if (record && typeof record === 'object' && !Array.isArray(record) && Number.isFinite(record.completedAt)) this.records[key] = { ...record };
+          }
+        }
+      } catch { this.storageAvailable = false; }
+    }
+    order() { return this.levels.keys(); }
+    load() { return Object.fromEntries(Object.entries(this.records).map(([key, record]) => [key, { ...record }])); }
+    has(key) { return Object.prototype.hasOwnProperty.call(this.records, key); }
+    isUnlocked(key) {
+      const index = this.order().indexOf(key);
+      return index >= 0 && (index === 0 || this.has(key) || this.has(this.order()[index - 1]));
+    }
+    next(key) { const index = this.order().indexOf(key); return index >= 0 ? this.order()[index + 1] || null : null; }
+    completedCount() { return this.order().filter(key => this.has(key)).length; }
+    nextUncompleted() { return this.order().find(key => !this.has(key) && this.isUnlocked(key)) || this.order().at(-1); }
+    markComplete(key, { score = 0, lives = 1, waves = 0, stars: earnedStars, choice } = {}) {
+      if (!this.isUnlocked(key)) return null;
+      const previous = this.records[key];
+      const fullLives = this.levels.get(key).startingLives;
+      score = Number.isFinite(score) ? score : 0;
+      lives = Number.isFinite(lives) ? lives : 1;
+      waves = Number.isFinite(waves) ? waves : 0;
+      const stars = Number.isFinite(earnedStars) ? Math.max(1, Math.min(3, Math.floor(earnedStars))) : lives >= fullLives ? 3 : lives >= Math.ceil(fullLives * .5) ? 2 : 1;
+      const record = {
+        ...(typeof choice === 'string' ? {choice} : previous?.choice ? {choice:previous.choice} : {}),
+        completedAt: previous?.completedAt ?? this.now(),
+        updatedAt: this.now(),
+        score: Math.max(previous?.score || 0, Math.max(0, Math.floor(score) || 0)),
+        lives: Math.max(previous?.lives || 0, Math.max(0, Math.floor(lives) || 0)),
+        stars: Math.max(previous?.stars || 1, stars),
+        waves: Math.max(previous?.waves || 0, Math.max(0, Math.floor(waves) || 0))
+      };
+      this.records[key] = record;
+      try { this.write(JSON.stringify(this.records)); this.storageAvailable = true; }
+      catch { this.storageAvailable = false; }
+      return { ...record, firstClear: !previous, nextLevelKey: this.next(key) };
+    }
+  }
+
+  return { ContentDefinition, ContentCatalog, MapDefinition, WaveDefinition, LevelDefinition, GameModeDefinition, ContentRegistry, GameSession, CampaignProgress };
 });

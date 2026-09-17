@@ -3,26 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>森林守卫：甜橙谷</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Noto+Sans+SC:wght@500;700;900&display=swap" rel="stylesheet">
+  <meta name="description" content="甜橙谷：黑潮纪事。七幕二十关的策略塔防战役，指挥五行守卫，找回世界树失落的记忆。" />
+  <meta name="theme-color" content="#203d35" />
+  <title>甜橙谷 · 黑潮纪事</title>
+  <link rel="preload" href="resources/vendor/noto-sans-sc.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css?v=20260827-4" />
   <link rel="stylesheet" href="evolution.css?v=20260827-4" />
   <link rel="stylesheet" href="controls.css?v=20260831-merge-feedback-1" />
   <link rel="stylesheet" href="app-layout.css?v=20260829-2" />
   <link rel="stylesheet" href="battle-redesign.css?v=20260904-battle-feedback-1" />
+  <link rel="stylesheet" href="launch-polish.css?v=20260907-visual-pass-1" />
+  <link rel="stylesheet" href="campaign-ui.css" />
+  <link rel="stylesheet" href="battle-camera.css" />
+  <link rel="stylesheet" href="premiere.css" />
+  <link rel="stylesheet" href="tactics.css" />
+  <link rel="stylesheet" href="experience.css" />
 </head>
 <body>
+  <noscript>甜橙谷需要启用 JavaScript 才能运行。</noscript>
   <section class="app-page hub-page" id="hubPage">
-    <header class="page-topbar"><div class="brand"><div class="brand-mark">🍊</div><div><h1>甜橙谷</h1><span>森林守卫司令部</span></div></div><button class="sound-btn hub-sound-btn" title="音效设置">🔊</button></header>
-    <div class="hub-hero"><div class="hub-copy"><span class="page-kicker">ORANGEWOOD COMMAND</span><h2>选择远征</h2><p>整备守卫，踏入不同战场，守住世界树的根系。</p></div><div class="hub-status"><span>远征档案</span><b>3</b><small>开放章节</small></div></div>
-    <div class="mode-grid"><button class="mode-card endless-card" id="hubEndlessBtn"><span class="mode-card-icon">∞</span><span><b>无尽远征</b><small>持续迎战强化敌群，自由轮换已发现的战场。</small><em>立即出征 →</em></span></button><button class="mode-card campaign-card" id="hubCampaignBtn"><span class="mode-card-icon">▦</span><span><b>守护征程</b><small>按章节推进固定关卡，迎战地图专属首领。</small><em>选择章节 →</em></span></button><button class="mode-card developer-card" id="hubDeveloperBtn"><span class="mode-card-icon">⚙</span><span><b>开发者模式</b><small>快速生成塔、敌人与资源，直接验证战斗和进化功能。</small><em>打开调试战场 →</em></span></button></div>
-    <section class="hub-section"><div><span class="page-kicker">WORLD STATUS</span><h3>世界树战报</h3></div><div class="hub-metrics"><span><b>4</b><small>已发现地图</small></span><span><b>79</b><small>守卫形态</small></span><span><b>7</b><small>敌人族类</small></span></div></section>
+    <div class="frontier-art" aria-hidden="true"></div>
+    <header class="page-topbar"><a class="brand" href="#" aria-label="甜橙谷首页"><div class="brand-mark"><i data-lucide="citrus"></i></div><div><h1>甜橙谷</h1><span>ORANGEWOOD CHRONICLES</span></div></a><div class="hub-top-actions"><button id="hubJournalBtn" title="根脉纪事"><i data-lucide="book-open"></i><span>巡林手记</span></button><button class="sound-btn hub-sound-btn" title="设置" aria-label="设置"><i data-lucide="settings-2"></i></button></div></header>
+    <div class="hub-hero"><div class="hub-copy"><span class="page-kicker"><i></i> 一场关于守护与记忆的远征</span><h2>黑潮纪事</h2><div class="hub-english">THE LOST ROOTS</div><p>世界遗忘的，森林还记得。<br>带上你的守卫，把第一束光送回根脉。</p><div class="hub-save" id="hubSave"><span class="save-dot"></span><span>新的旅程正在等你</span></div></div></div>
+    <nav class="mode-grid" aria-label="选择游戏模式"><button class="mode-card campaign-card" id="hubCampaignBtn"><span class="mode-card-icon"><i data-lucide="compass"></i></span><span><b>踏入甜橙谷</b><small>故事战役 · 从第一封来信开始</small></span><em>→</em></button><button class="mode-card endless-card" id="hubEndlessBtn"><span class="mode-card-icon"><i data-lucide="infinity"></i></span><span><b>无尽远征</b><small>自由布阵，迎接不息的黑潮</small></span><em>↗</em></button><button class="hub-resume" id="hubResumeBtn" hidden><i data-lucide="play"></i><span>继续上次战斗</span></button></nav>
+    <div class="hub-caption"><span class="caption-line"></span><span>最后一盏灯，还在等你。<small>THE WORLD TREE · 翠影之境</small></span></div>
+    <footer class="hub-section"><div class="hub-footer-copy"><span class="page-kicker">七幕旅程 · 一个会记住你的世界</span><span>合成进化 / 五行共鸣 / 战术指挥</span></div><div class="hub-footer-actions"><button id="hubGuideBtn"><i data-lucide="circle-help"></i>游玩指南</button><details class="workshop-entry"><summary>创作工坊</summary><button class="developer-card" id="hubDeveloperBtn">进入调试战场</button></details><span class="build-stamp">CHRONICLES / 2.0</span></div></footer>
   </section>
   <section class="app-page campaign-page" id="campaignPage" hidden>
-    <header class="page-topbar"><button class="page-back-btn" id="campaignBackBtn" title="返回远征大厅">←</button><div><span class="page-kicker">CAMPAIGN MAP</span><h1>守护征程</h1></div><div class="campaign-record"><span>章节进度</span><b>0 / 3</b></div></header>
-    <div class="campaign-heading"><div><h2>选择目的地</h2><p>每一章拥有固定地图、波次编排与最终首领。</p></div><span>世界树根脉 · 东境</span></div>
+    <header class="page-topbar"><button class="page-back-btn" id="campaignBackBtn" title="远征大厅"><i data-lucide="compass"></i></button><div><span class="page-kicker">ORANGEWOOD / CHRONICLES</span><h1>甜橙谷</h1></div><nav class="campaign-nav"><button id="codexBtn"><i data-lucide="book-open"></i>守卫档案</button><button id="settingsBtn" title="设置" aria-label="设置"><i data-lucide="settings-2"></i></button></nav><div class="campaign-record"><span>守护征程</span><b id="campaignProgressCount">0 / 20</b></div></header>
+    <div class="campaign-heading"><div><span class="page-kicker">黑潮纪事</span><h2>失落的根脉</h2><p id="campaignChapterStory">一封来自古树的求救信，唤醒了甜橙谷最后的守卫。</p></div><div class="campaign-heading-right"><b id="campaignStars">0 / 60</b><span>守护之星</span><button id="continueCampaignBtn"><i data-lucide="play"></i>继续征程</button></div></div>
+    <nav id="chapterTabs" class="chapter-tabs" aria-label="故事篇章"></nav>
     <div class="chapter-grid" id="chapterGrid"></div>
   </section>
   <main class="shell app-page battle-page" id="battlePage" hidden>
@@ -37,7 +47,7 @@
       <button class="sound-btn" id="soundBtn" title="切换音效">🔊</button>
     </header>
     <section class="stage-wrap">
-      <div class="stage-head"><div class="stage-title"><span class="stage-kicker">ORANGEWOOD FRONTIER</span><strong id="fieldName">翠影林地</strong><span id="message">不断合成守卫，完成最终进化即可解锁决胜波。</span></div><button class="field-switch" id="fieldBtn" title="整备阶段切换已解锁场地"><span id="fieldIcon">🌲</span><span><b>场地罗盘</b><small id="fieldEffect">普通守卫伤害 +12%</small></span><i>↻</i></button><div class="wave-event" id="waveEvent"><b>🍃 林地微风</b><small>平稳波次</small></div><div class="wave-box"><span>WAVE</span><b id="wave">1</b><em id="waveTotal">/ ∞</em></div></div>
+      <div class="stage-head"><div class="stage-title"><span class="stage-kicker" id="phaseLabel">整备阶段 · ORANGEWOOD FRONTIER</span><strong id="fieldName">翠影林地</strong><span id="message">领取灵种、部署守卫，然后开始第 1 波。</span></div><button class="field-switch" id="fieldBtn" title="整备阶段切换已解锁场地"><span id="fieldIcon">🌲</span><span><b>场地罗盘</b><small id="fieldEffect">普通守卫伤害 +12%</small></span><i>↻</i></button><div class="wave-event" id="waveEvent"><b>🍃 林地微风</b><small>平稳波次</small></div><div class="wave-box"><span>WAVE</span><b id="wave">1</b><em id="waveTotal">/ ∞</em></div></div>
       <div class="battle-stage-body">
         <section class="map-operations" id="mapOperations">
           <div class="hud-spirit"><span>🌳</span><span><small>世界树</small><b><span id="mapSpirit">0</span> / <span id="mapSpiritCost">100</span></b></span><i><span id="mapSpiritFill"></span></i></div>
@@ -46,6 +56,7 @@
           <div class="map-objective" id="mapObjective">地图目标：未侦察</div>
           <div class="compact-reserve"><small>灵种仓</small><div id="mapReserveList"><span class="hud-empty">暂无灵种</span></div><button id="mapRecallBtn" class="compact-recall" title="撤回选中的守卫" aria-label="撤回选中的守卫" disabled>↙</button></div>
         </section>
+        <div class="battle-coach" id="battleCoach" hidden aria-live="polite"></div>
         <div class="battle-map-slot"><div class="canvas-frame"><canvas id="game" width="960" height="540"></canvas><div class="battle-badges"><span class="combo-badge" id="comboBadge">连击 ×0</span><span class="threat-badge" id="threatBadge">林地安宁</span></div><div class="hint" id="hint">同形态守卫可合成 · 同级共鸣效率最高</div></div></div>
       </div>
       <section class="dev-tools" id="devTools" hidden aria-label="开发者工具">
@@ -57,13 +68,31 @@
     <aside class="tower-panel"><div class="panel-title"><div><span>守护者工坊</span><h2>橡果军团</h2></div><span class="tip">最高 Lv.20</span></div><section class="side-section selection-section"><div class="side-heading"><b>当前目标</b><span>详情</span></div><div class="selected-info" id="selectedInfo"><span class="info-icon">🌰</span><div><b>拖动橡果塔改变位置</b><small>点击塔或敌人查看详细信息</small></div></div></section><section class="side-section roster-section"><div class="side-heading"><b>当前编队</b><span>点击定位最高等级</span></div><div class="tower-list" id="towerList"></div></section><section class="side-section evolution-section"><div class="side-heading"><b>进化与羁绊</b><span>横向阵容</span></div><div class="evolution-summary" id="evolutionSummary"></div></section></aside>
   </main>
   <div class="evo-modal" id="evoModal" aria-hidden="true"><div class="evo-dialog"><div class="rare-banner" id="rareBanner" hidden>稀有路线降临</div><span class="modal-kicker">EVOLUTION TREE</span><h2 id="evoTitle">选择永久进化分支</h2><p>Lv.5 确定主路线，Lv.10 确定专属分支。同路线用于继续合成成长，不同路线用于扩充阵容羁绊；路线一旦选择不可更换。</p><div class="evo-choices" id="evoChoices"></div></div></div>
+    <div class="story-modal" id="storyModal" role="dialog" aria-modal="true" aria-labelledby="storyTitle" hidden><div class="story-dialog"><button class="dialog-close" id="storyClose" aria-label="关闭" title="关闭"><i data-lucide="x"></i></button><div id="storyBody"></div></div></div>
+    <script src="resources/vendor/lucide.min.js"></script>
     <script src="content-system.js?v=20260829-3"></script>
     <script src="game-content.js?v=20260829-6"></script>
+    <script src="campaign-system.js"></script>
+    <script src="tactics-system.js"></script>
+    <script src="checkpoint-system.js"></script>
+    <script src="story-content.js"></script>
+    <script src="story-system.js"></script>
     <script src="enemy-system.js?v=20260902-enemy-pace-1"></script>
     <script src="evolution-system.js?v=20260828-1"></script>
     <script src="node_modules/@tweenjs/tween.js/dist/tween.umd.js?v=25.0.0"></script>
     <script src="tower-system.js?v=20260904-manual-order-1"></script>
     <script src="synergy-system.js?v=20260828-1"></script>
+    <script src="chronicles-system.js"></script>
+    <script src="boss-system.js"></script>
+    <script src="world-renderer.js"></script>
+    <script src="guardian-renderer.js"></script>
     <script src="game.js?v=20260904-battle-feedback-1"></script>
+    <script src="campaign-save.js"></script>
+    <script src="campaign-ui.js"></script>
+    <script src="battle-camera.js"></script>
+    <script src="tactics-ui.js"></script>
+    <script src="boss-ui.js"></script>
+    <script src="premiere.js"></script>
+    <script src="experience.js"></script>
 </body>
 </html>

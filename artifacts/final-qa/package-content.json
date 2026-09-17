@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-09-17T09:41:50.038Z",
+  "results": [
+    {
+      "platform": "win",
+      "version": "2.0.0",
+      "asarEntries": 78,
+      "runtimeDependencyFiles": 0,
+      "sourceFilesVerified": 34,
+      "archive": {
+        "file": "Orangewood-2.0.0-win-x64.zip",
+        "bytes": 162015857,
+        "sha256": "defef76d8a4d0ea7d93137956e124119d5adb394e50efb0945bb5814dcf274f5"
+      },
+      "nativeBuild": false
+    },
+    {
+      "platform": "linux",
+      "version": "2.0.0",
+      "asarEntries": 78,
+      "runtimeDependencyFiles": 0,
+      "sourceFilesVerified": 34,
+      "archive": {
+        "file": "Orangewood-2.0.0-linux-x64.tar.gz",
+        "bytes": 127736090,
+        "sha256": "29c0ca2fe81f404b518738d9860704c610506a6e2a24cbb38a6edba6c8a711d5"
+      },
+      "nativeBuild": true
+    }
+  ]
+}

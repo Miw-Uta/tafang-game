@@ -61,15 +61,22 @@
       const position = context.positionOf(tower);
       const radius = context.rangeOf(tower);
       const candidates = enemies
-        .filter(enemy => !enemy.dead && Math.hypot(enemy.x - position.x, enemy.y - position.y) < radius)
+        .filter(enemy => !enemy.dead && Math.hypot(enemy.x - position.x, enemy.y - position.y) < radius);
       const progress = enemy => enemy.routeProgress ?? enemy.dist ?? 0;
-      if (tower.manualTarget && !tower.manualTarget.dead && tower.manualTarget.hp > 0 && candidates.includes(tower.manualTarget)) return [tower.manualTarget];
-      const priority = 'front';
+      const focus = tower.manualTarget && tower.manualTarget.hp > 0 && candidates.includes(tower.manualTarget) ? tower.manualTarget : null;
+      if (focus?.isStructure) return [focus];
+      const priority = tower.targetPriority;
       const prioritized = candidates.filter(enemy => !enemy.isStructure);
       return prioritized.sort((left, right) => {
+        if (left === focus) return -1;
+        if (right === focus) return 1;
         if (priority === 'back') return progress(left) - progress(right);
         if (priority === 'strong') return (right.hp - left.hp) || progress(right) - progress(left);
         if (priority === 'weak') return (left.hp / Math.max(1, left.max || left.hp)) - (right.hp / Math.max(1, right.max || right.hp)) || progress(right) - progress(left);
+        if (priority === 'counter') {
+          const counterScore = enemy => (enemy.aura ? 8 : 0) + (enemy.maxShield > 0 ? 3 + Math.min(2, enemy.shield / Math.max(1, enemy.maxShield)) : 0) + (enemy.regen > 0 ? 2 : 0) + (enemy.type === 'boss' ? 1 : 0);
+          return (counterScore(right) - counterScore(left)) || progress(right) - progress(left);
+        }
         return progress(right) - progress(left);
       });
     }
@@ -129,7 +136,7 @@
   }
 
   class Tower {
-    constructor({ col, row, level = 1, evo = 'base', evoTier = 0, cool = 0, evolutionPath = null, growth = 0 } = {}) {
+    constructor({ col, row, level = 1, evo = 'base', evoTier = 0, cool = 0, evolutionPath = null, growth = 0, targetPriority = 'front' } = {}) {
       if (!Number.isInteger(col) || !Number.isInteger(row)) throw new Error('Tower requires integer grid coordinates');
       this.col = col;
       this.row = row;
@@ -139,6 +146,7 @@
       this.cool = cool;
       this.evolutionPath = evolutionPath;
       this.growth = Math.max(0, Number(growth) || 0);
+      this.targetPriority = ['front', 'back', 'strong', 'weak', 'counter'].includes(targetPriority) ? targetPriority : 'front';
       this.attackAnimation = null;
       this.attackSequence = 0;
     }
@@ -271,7 +279,7 @@
       return {
         col: this.col, row: this.row, level: this.level, evo: this.evo,
         evoTier: this.evoTier, cool: this.cool, evolutionPath: this.evolutionPath
-        , growth: this.growth
+        , growth: this.growth, targetPriority: this.targetPriority
       };
     }
   }

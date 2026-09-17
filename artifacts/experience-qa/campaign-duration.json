@@ -1,0 +1,170 @@
+{
+  "source": "artifacts/campaign-regression.json",
+  "sourceTimestamp": "2026-09-17T08:01:14.722Z",
+  "sourceHasEngineHash": false,
+  "seed": 20260907,
+  "strategy": "mixed",
+  "difficulty": "normal",
+  "levels": 20,
+  "wins": 20,
+  "totalWaves": 85,
+  "totalSimulationSeconds": 5210.7,
+  "battleMinutesAtSpeed": {
+    "1x": 86.84,
+    "2x": 43.42,
+    "3x": 28.95
+  },
+  "shortest": "groveGate",
+  "longest": "worldTree",
+  "estimatedPreparationAndReadingMinutes": {
+    "fast": 31.25,
+    "deliberate": 86.66666666666667
+  },
+  "notes": [
+    "Elapsed is simulation game-clock time. The deterministic bot makes preparations and story choices immediately. This excludes human deliberation, reading, learning, failed attempts, replay, and boot/menu time.",
+    "Runtime supports 1x, 2x, 3x. Speed divides combat duration only.",
+    "These are pre-existing results without an engine content hash; they are a pacing baseline, not proof that the latest build has identical pacing."
+  ],
+  "results": [
+    {
+      "level": "groveGate",
+      "result": "WIN",
+      "seconds": 85.9,
+      "waves": 3,
+      "secondsPerWave": 28.6
+    },
+    {
+      "level": "whisperGrove",
+      "result": "WIN",
+      "seconds": 92.9,
+      "waves": 3,
+      "secondsPerWave": 31
+    },
+    {
+      "level": "rootCrossing",
+      "result": "WIN",
+      "seconds": 105.8,
+      "waves": 3,
+      "secondsPerWave": 35.3
+    },
+    {
+      "level": "mirrorMarsh",
+      "result": "WIN",
+      "seconds": 142.5,
+      "waves": 3,
+      "secondsPerWave": 47.5
+    },
+    {
+      "level": "tideShrine",
+      "result": "WIN",
+      "seconds": 149.6,
+      "waves": 3,
+      "secondsPerWave": 49.9
+    },
+    {
+      "level": "drownedArchive",
+      "result": "WIN",
+      "seconds": 150.1,
+      "waves": 3,
+      "secondsPerWave": 50
+    },
+    {
+      "level": "emberPass",
+      "result": "WIN",
+      "seconds": 178.7,
+      "waves": 4,
+      "secondsPerWave": 44.7
+    },
+    {
+      "level": "cinderForge",
+      "result": "WIN",
+      "seconds": 176.1,
+      "waves": 4,
+      "secondsPerWave": 44
+    },
+    {
+      "level": "ashClimb",
+      "result": "WIN",
+      "seconds": 223.9,
+      "waves": 4,
+      "secondsPerWave": 56
+    },
+    {
+      "level": "frostGate",
+      "result": "WIN",
+      "seconds": 199.1,
+      "waves": 4,
+      "secondsPerWave": 49.8
+    },
+    {
+      "level": "moonlitVault",
+      "result": "WIN",
+      "seconds": 206.5,
+      "waves": 4,
+      "secondsPerWave": 51.6
+    },
+    {
+      "level": "rootMemory",
+      "result": "WIN",
+      "seconds": 250.1,
+      "waves": 4,
+      "secondsPerWave": 62.5
+    },
+    {
+      "level": "starfall",
+      "result": "WIN",
+      "seconds": 314,
+      "waves": 5,
+      "secondsPerWave": 62.8
+    },
+    {
+      "level": "sunkenCrown",
+      "result": "WIN",
+      "seconds": 372.3,
+      "waves": 5,
+      "secondsPerWave": 74.5
+    },
+    {
+      "level": "blackTide",
+      "result": "WIN",
+      "seconds": 402.1,
+      "waves": 5,
+      "secondsPerWave": 80.4
+    },
+    {
+      "level": "fiveRoots",
+      "result": "WIN",
+      "seconds": 338.5,
+      "waves": 5,
+      "secondsPerWave": 67.7
+    },
+    {
+      "level": "eclipseBridge",
+      "result": "WIN",
+      "seconds": 360.1,
+      "waves": 5,
+      "secondsPerWave": 72
+    },
+    {
+      "level": "thornCathedral",
+      "result": "WIN",
+      "seconds": 401.2,
+      "waves": 5,
+      "secondsPerWave": 80.2
+    },
+    {
+      "level": "heartRebirth",
+      "result": "WIN",
+      "seconds": 513.4,
+      "waves": 6,
+      "secondsPerWave": 85.6
+    },
+    {
+      "level": "worldTree",
+      "result": "WIN",
+      "seconds": 547.9,
+      "waves": 7,
+      "secondsPerWave": 78.3
+    }
+  ]
+}

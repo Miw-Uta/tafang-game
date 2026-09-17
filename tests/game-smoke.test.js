@@ -11,7 +11,8 @@ function element(id) {
   if (!elements.has(id)) elements.set(id, {
     id, textContent: '', innerHTML: '', disabled: false, hidden: false,
     style: {}, dataset: {}, classList: classList(),
-    addEventListener() {}, setAttribute() {}, setPointerCapture() {},
+    listeners: {},
+    addEventListener(type, handler) { (this.listeners[type] ||= []).push(handler); }, setAttribute() {}, setPointerCapture() {},
     querySelectorAll() { return []; },
     getBoundingClientRect() { return { left: 0, top: 0, width: 960, height: 540 }; }
   });
@@ -48,6 +49,7 @@ vm.runInContext(fs.readFileSync(path.join(root, 'enemy-system.js'), 'utf8'), san
 vm.runInContext(fs.readFileSync(path.join(root, 'evolution-system.js'), 'utf8'), sandbox, { filename: 'evolution-system.js' });
 vm.runInContext(fs.readFileSync(path.join(root, 'tower-system.js'), 'utf8'), sandbox, { filename: 'tower-system.js' });
 vm.runInContext(fs.readFileSync(path.join(root, 'synergy-system.js'), 'utf8'), sandbox, { filename: 'synergy-system.js' });
+vm.runInContext(fs.readFileSync(path.join(root, 'campaign-system.js'), 'utf8'), sandbox, { filename: 'campaign-system.js' });
 vm.runInContext(`${fs.readFileSync(path.join(root, 'game.js'), 'utf8')}
   globalThis.__smoke = {
     towerClass: towers[0].constructor.name,
@@ -304,7 +306,10 @@ assert.equal(sandbox.__smoke.finalTrialFormationReady, true);
 assert.equal(sandbox.__smoke.noUniversalRareStatWinner, true);
 assert.equal(sandbox.__smoke.branchesShareCombatBudget, true);
 assert.equal(sandbox.__smoke.fusionsRespectIngredientBudget, true);
-assert.deepEqual(Array.from(sandbox.window.GameApp.levels(), level => level.key), ['groveGate', 'mirrorMarsh', 'emberPass']);
+const campaignLevels = Array.from(sandbox.window.GameApp.levels(), level => level.key);
+assert.equal(campaignLevels.length, 20);
+assert.equal(campaignLevels[0], 'groveGate');
+assert.equal(campaignLevels.at(-1), 'worldTree');
 const campaignSession = sandbox.window.GameApp.startMode('campaign', 'groveGate');
 assert.equal(campaignSession.modeKey, 'campaign');
 assert.equal(campaignSession.levelKey, 'groveGate');
@@ -319,8 +324,8 @@ assert.ok(indexMarkup.indexOf('id="mapOperations"') < indexMarkup.indexOf('<canv
 assert.equal(indexMarkup.includes('id="summonWorkshop"'), false);
 assert.equal(indexMarkup.includes('mapCultivateBtn'), false);
 assert.equal(indexMarkup.includes('mapInfuseBtn'), false);
-assert.equal(elements.get('mapSpirit').textContent, 0);
-assert.match(elements.get('mapReserveList').innerHTML, /暂无灵种/);
+assert.equal(elements.get('mapSpirit').textContent, 60);
+assert.match(elements.get('mapReserveList').innerHTML, /data-map-seed="1"/);
 const developerSession = sandbox.window.GameApp.startMode('developer');
 assert.equal(developerSession.modeKey, 'developer');
 assert.equal(elements.get('devTools').hidden, false);
@@ -330,4 +335,162 @@ sandbox.window.GameApp.developer.action('spirit');
 sandbox.Math.random = originalRandom;
 assert.match(elements.get('mapReserveList').innerHTML, /data-map-seed/);
 assert.equal(sandbox.window.GameApp.developer.spawnTower(20, 'fiveSpirit', 'fiveSpirit', 2), true);
+vm.runInContext(`
+  globalThis.__campaignFlow = {};
+  const campaignHooks = { updated: 0, intermissions: 0, results: [] };
+  window.CampaignUI = {
+    update() { campaignHooks.updated++; },
+    intermission() { campaignHooks.intermissions++; },
+    result(value) { campaignHooks.results.push(value); }
+  };
+  __campaignFlow.lockedRequest = startMode('campaign', 'worldTree').error;
+  startMode('campaign', 'groveGate');
+  __campaignFlow.loadout = towers[0].level === 3 && coins === 60 && reserve[1] === 4;
+  startWave();
+  __campaignFlow.dispatch = $('message').textContent.includes(gameSession.level.dispatches[0]);
+  enemies = []; completeWave();
+  __campaignFlow.preparationWaits = nextWaveTimer === 0 && !running && campaignHooks.intermissions === 1;
+  update(10);
+  __campaignFlow.preparationStillWaits = !running && gameSession.waveNumber === 2;
+  for (let index = 1; index < 3; index++) { startWave(); enemies = []; completeWave(); }
+  __campaignFlow.completed = gameWon && campaignProgress.has('groveGate');
+  __campaignFlow.nextUnlocked = campaignProgress.isUnlocked('whisperGrove');
+  __campaignFlow.continueEnabled = !$('waveBtn').disabled && $('waveBtn').textContent.includes('继续下一关');
+  $('waveBtn').onclick();
+  __campaignFlow.nextPrepared = gameSession.level.key === 'whisperGrove' && gameSession.status === 'preparing' && !running;
+  __campaignFlow.startEnabled = !$('waveBtn').disabled && $('waveBtn').textContent === '开始守护';
+  __campaignFlow.savedScore = campaignProgress.load().groveGate.score;
+  __campaignFlow.objectiveStars = campaignProgress.load().groveGate.stars === 2 && campaignHooks.results[0].stars === 2;
+  __campaignFlow.hooksUpdated = campaignHooks.updated > 0;
+  startMode('campaign', 'groveGate'); autoMerge();
+  __campaignFlow.mergeTracked = campaignRun.stats.merges === 3;
+  undoAutoMerge();
+  __campaignFlow.undoRestoresMetric = campaignRun.stats.merges === 0;
+  autoMerge();
+  for (let index = 0; index < 3; index++) { startWave(); enemies = []; completeWave(); }
+  __campaignFlow.perfectClear = campaignRun.result.stars === 3 && campaignProgress.load().groveGate.stars === 3;
+  startMode('campaign', 'whisperGrove');
+  __campaignFlow.reverseRoute = routeWeightsForWave(1)[1] === 1 && routeWeightsForWave(2)[0] === 1;
+  const veteran = towerFactory.create({ col: towers[0].col, row: towers[0].row, level: 5, evo: 'metal', evolutionPath: 'metal', evoTier: 1 });
+  towers = [veteran]; selectedTower = veteran;
+  const boss = enemyFactory.create({ archetype: 'groveTyrant', maxHp: 10, baseSpeed: 20 });
+  boss.x = center(veteran).x + 60; boss.y = center(veteran).y; boss.hp = 1; boss.shield = 0;
+  enemies = [boss];
+  canvas.listeners.pointerdown[0]({ clientX: boss.x, clientY: boss.y, pointerId: 1 });
+  damageTarget(veteran, boss, evolution.metal);
+  __campaignFlow.focusKillTracked = campaignRun.stats.focusedBossKills === 1 && campaignRun.stats.forgedBossKills === 1;
+  const target = enemyFactory.create({ archetype: 'mossling', maxHp: 10, baseSpeed: 20 });
+  const previousControls = campaignRun.stats.controls;
+  applyEnemyStatus(target, 'slow', 2); applyEnemyStatus(target, 'slow', 2);
+  __campaignFlow.uniqueControlTracked = campaignRun.stats.controls === previousControls + 1;
+  const currentSlot = { col: veteran.col, row: veteran.row };
+  selectedTower = veteran; recallSelectedTower(); beginDeployStandby(0); deployReserve(currentSlot.col, currentSlot.row);
+  __campaignFlow.redeployTracked = campaignRun.stats.recalls === 1 && campaignRun.stats.redeployments === 1;
+  startWave(); lives = gameSession.loseLife(100); update(.01);
+  __campaignFlow.lossResult = campaignHooks.results.at(-1).won === false && campaignHooks.results.at(-1).stars === 0 && !campaignProgress.has('whisperGrove');
+`, sandbox);
+assert.equal(sandbox.__campaignFlow.lockedRequest, 'level-locked');
+assert.equal(sandbox.__campaignFlow.completed, true);
+assert.equal(sandbox.__campaignFlow.nextUnlocked, true);
+assert.equal(sandbox.__campaignFlow.continueEnabled, true);
+assert.equal(sandbox.__campaignFlow.nextPrepared, true);
+assert.equal(sandbox.__campaignFlow.startEnabled, true);
+assert.ok(sandbox.__campaignFlow.savedScore >= 5000);
+for (const key of ['loadout', 'dispatch', 'preparationWaits', 'preparationStillWaits', 'objectiveStars', 'hooksUpdated', 'mergeTracked', 'undoRestoresMetric', 'perfectClear', 'reverseRoute', 'focusKillTracked', 'uniqueControlTracked', 'redeployTracked', 'lossResult']) assert.equal(sandbox.__campaignFlow[key], true, key);
+vm.runInContext(`
+  globalThis.__economy = {};
+  const economyRandom = Math.random;
+  Math.random = () => 0;
+  try {
+    startMode('endless');
+    coins = 80;
+    germinationOffers = [{ kind: 'seed', level: 1, claimed: true }, { kind: 'seed', level: 2, claimed: true }];
+    const claimedSnapshot = JSON.stringify({ coins, germinationOffers, reserve, growthCycles });
+    __economy.claimedRerollRejected = refreshGermination() === false;
+    __economy.claimedRerollUnchanged = claimedSnapshot === JSON.stringify({ coins, germinationOffers, reserve, growthCycles });
+    germinationOffers.push({ kind: 'seed', level: 3 });
+    __economy.singleRerollSucceeded = refreshGermination() === true;
+    __economy.singleReroll = { cost: 80 - coins, offers: germinationOffers.length, unclaimed: germinationOffers.filter(offer => !offer.claimed).length, draws: growthCycles.total, reserveCount: Object.values(reserve).reduce((sum, count) => sum + count, 0) };
+
+    startMode('endless');
+    const threshold = growthModes.balanced.threshold;
+    coins = threshold * 2 + 17;
+    germinationOffers = Array.from({ length: 3 }, () => ({ kind: 'seed', level: 1 }));
+    __economy.paidRefills = [];
+    for (let claim = 0; claim < 3; claim++) {
+      claimGermination(0);
+      __economy.paidRefills.push({ coins, offers: germinationOffers.length, draws: growthCycles.total, seeds: Object.values(reserve).reduce((sum, count) => sum + count, 0) });
+    }
+
+    startMode('endless'); growthMode = 'refine';
+    const refineThreshold = growthModes.refine.threshold;
+    coins = refineThreshold - 1;
+    germinationOffers = [{ kind: 'seed', level: 2 }];
+    claimGermination(0);
+    __economy.noFreeRefill = coins === refineThreshold - 1 && germinationOffers.length === 0 && growthCycles.total === 0 && reserve[2] === 1;
+    __economy.emptyClaimRejected = claimGermination(0) === false;
+    coins++;
+    processGrowth();
+    __economy.refillAtThreshold = coins === 0 && germinationOffers.length === 1 && growthCycles.total === 1 && reserve[2] === 1;
+
+    const resourceState = () => JSON.stringify({ coins, reserve, germinationOffers, growthCycles, score, session: gameSession.snapshot(), resultCount: campaignHooks.results.length, intermissions: campaignHooks.intermissions });
+    startMode('endless'); coins = 95;
+    const preparingState = resourceState(); completeWave();
+    __economy.preparingCannotReward = resourceState() === preparingState;
+    startWave(); enemies = []; completeWave();
+    __economy.validWaveRewards = coins === 19 && germinationOffers.length === 1 && growthCycles.total === 1;
+    const rewardedState = resourceState(); completeWave(); completeWave();
+    __economy.duplicateWaveNoReward = resourceState() === rewardedState;
+    startMode('campaign', 'groveGate');
+    for (let index = 0; index < gameSession.level.waves.length; index++) { startWave(); enemies = []; completeWave(); }
+    const wonState = resourceState(); completeWave();
+    __economy.wonCannotReward = resourceState() === wonState;
+    startMode('endless'); startWave(); lives = gameSession.loseLife(100);
+    const lostState = resourceState(); completeWave();
+    __economy.lostCannotReward = resourceState() === lostState;
+    startMode('endless'); startWave(); gameSession.abandon();
+    const abandonedState = resourceState(); completeWave();
+    __economy.abandonedCannotReward = resourceState() === abandonedState;
+  } finally { Math.random = economyRandom; }
+`, sandbox);
+for (const key of ['claimedRerollRejected', 'claimedRerollUnchanged', 'singleRerollSucceeded', 'noFreeRefill', 'emptyClaimRejected', 'refillAtThreshold', 'preparingCannotReward', 'validWaveRewards', 'duplicateWaveNoReward', 'wonCannotReward', 'lostCannotReward', 'abandonedCannotReward']) assert.equal(sandbox.__economy[key], true, key);
+assert.deepEqual(JSON.parse(JSON.stringify(sandbox.__economy.singleReroll)), { cost: 20, offers: 1, unclaimed: 1, draws: 0, reserveCount: 0 });
+assert.deepEqual(JSON.parse(JSON.stringify(sandbox.__economy.paidRefills)), [
+  { coins: 117, offers: 3, draws: 1, seeds: 1 },
+  { coins: 17, offers: 3, draws: 2, seeds: 2 },
+  { coins: 17, offers: 2, draws: 2, seeds: 3 }
+]);
 console.log('game-smoke: attack variants and evolved-tower standby storage passed');
+for (const file of ['story-content.js','story-system.js']) vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),sandbox,{filename:file});
+vm.runInContext(`
+  startMode('campaign','groveGate');
+  globalThis.__storyCombat={};
+  const baseRange=currentAttackRadius(evolution.base,towers[0]);
+  const baseDamage=formationDamageMultiplier(towers[0]);
+  missionStory.choose('north',2);
+  __storyCombat.range=currentAttackRadius(evolution.base,towers[0])/baseRange;
+  __storyCombat.damage=formationDamageMultiplier(towers[0])/baseDamage;
+  __storyCombat.routes=[...routeWeightsForWave(2)];
+  __storyCombat.pastRoutes=[...routeWeightsForWave(1)];
+  missionStory=new StoryDomain.MissionStory(StoryContent.decisions.whisperGrove);
+  missionStory.choose('listen',2);
+  const controlled=enemyFactory.create({archetype:'mossling',maxHp:1000,baseSpeed:20});
+  __storyCombat.control=applyEnemyStatus(controlled,'stun',2);
+  missionStory=new StoryDomain.MissionStory(StoryContent.decisions.tideShrine);
+  missionStory.choose('flame',2);coins=0;germinationOffers=[];
+  gainSpirit(20);__storyCombat.income=coins;
+  missionStory=new StoryDomain.MissionStory(StoryContent.decisions.drownedArchive);
+  missionStory.choose('unseal',2);
+  enemies=[controlled];surgeCharge=100;paused=false;
+  unleashSurge();__storyCombat.surgeDamage=1000-controlled.hp;
+  startMode('campaign','groveGate');
+  __storyCombat.reset=Object.keys(missionEffects()).length===0;
+`,sandbox);
+assert.ok(Math.abs(sandbox.__storyCombat.range-1.08)<1e-10);
+assert.ok(Math.abs(sandbox.__storyCombat.damage-.92)<1e-10);
+assert.deepEqual(Array.from(sandbox.__storyCombat.routes),[3,1]);
+assert.deepEqual(Array.from(sandbox.__storyCombat.pastRoutes),[1,0]);
+assert.equal(sandbox.__storyCombat.control,2.4);
+assert.equal(sandbox.__storyCombat.income,24);
+assert.equal(sandbox.__storyCombat.surgeDamage,336);
+assert.equal(sandbox.__storyCombat.reset,true);

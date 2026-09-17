@@ -1,0 +1,32 @@
+.tactics-command { display:grid;grid-template-columns:128px 1fr;gap:10px 16px;padding:14px 17px;background:linear-gradient(105deg,#133f34,#163c33 58%,#243f32);border-top:1px solid #78987155;border-bottom:1px solid #132d25;color:#edf3de; }
+.tactics-energy { display:flex;flex-direction:column;justify-content:center;gap:3px; }
+.tactics-eyebrow { color:#c3d7bd;font-size:10px;letter-spacing:2px;font-weight:700; }
+.tactics-energy strong { color:#f6d48e;font-size:23px;font-variant-numeric:tabular-nums;line-height:1.2; }
+.tactics-energy strong small { font-size:11px;color:#a6bbaa;font-weight:500; }
+.tactics-energy>small { font-size:9px;color:#a6bbaa; }
+.tactics-meter { height:4px;overflow:hidden;background:#09281f;border-radius:3px;margin:3px 0; }
+.tactics-meter i { display:block;width:100%;height:100%;background:linear-gradient(90deg,#93c997,#f3ce85);transition:width .18s linear; }
+.tactics-abilities { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px; }
+.tactics-abilities button { position:relative;display:flex;align-items:center;gap:10px;min-width:0;min-height:74px;padding:10px 12px;background:#294c3f;border:1px solid #6c897358;border-radius:7px;color:#e7efda;text-align:left;overflow:hidden;transition:background .15s,border-color .15s,transform .15s; }
+.tactics-abilities button:hover:not(:disabled) { background:#365c49;border-color:var(--tactic-color);transform:translateY(-1px); }
+.tactics-abilities button[aria-pressed="true"] { background:#3a5e48;border-color:var(--tactic-color);box-shadow:inset 0 0 0 1px var(--tactic-color),0 0 18px #b3c59618; }
+.tactics-abilities button:disabled { cursor:default;filter:saturate(.6);opacity:.55; }
+.tactic-sigil { display:grid;place-items:center;flex-shrink:0;width:36px;height:39px;color:var(--tactic-color);font-size:20px;font-family:serif;border:1px solid currentColor;border-radius:15px 15px 5px 5px;background:#102f2988; }
+.tactic-sigil svg { width:24px;height:24px; }
+.tactic-copy { display:flex;flex-direction:column;min-width:0;gap:4px;position:relative;z-index:1; }
+.tactic-copy b { display:flex;align-items:center;gap:9px;color:var(--tactic-color);font-size:12px;white-space:nowrap; }
+.tactics-command kbd { display:inline-grid;place-items:center;min-width:17px;min-height:17px;padding:0 3px;border:1px solid #c8d9b34a;border-radius:3px;font:10px monospace;color:#c9d3c1; }
+.tactic-copy small { color:#b9c9b7;font-size:9px;line-height:1.4; }
+.tactic-copy em { font-size:10px;font-style:normal;color:#f0deb5; }
+.tactic-cooldown { position:absolute;bottom:0;left:0;width:100%;height:3px;background:var(--tactic-color);transform:scaleX(0);transform-origin:left;opacity:.85;transition:transform .15s linear; }
+.tactics-instruction { grid-column:1/-1;display:flex;align-items:center;gap:9px;min-height:16px;font-size:10px;color:#b0c4ad; }
+.tactics-instruction>span { flex:1;line-height:1.5; }
+.tactics-instruction>span.invalid { color:#efbd9f; }
+.tactics-instruction button { flex-shrink:0;min-height:30px;background:#3e5e44;color:#f9e9c8;padding:4px 11px;border:1px solid #94a37c66;border-radius:4px;font-size:11px; }
+.tactics-instruction button:disabled { opacity:.4; }
+.tactics-instruction [hidden] { display:none!important; }
+.tactics-command button:focus-visible { outline:2px solid #f5d18a;outline-offset:3px; }
+.tactics-aiming { cursor:crosshair!important; }
+@media(max-width:1100px) { .tactics-command { grid-template-columns:97px 1fr;gap:8px 11px;padding:11px 12px; }.tactics-abilities {gap:6px}.tactics-abilities button {padding:8px;gap:7px}.tactic-sigil {width:29px;height:34px;font-size:17px}.tactic-copy b {gap:5px;font-size:11px}.tactic-copy small {font-size:8px} }
+@media(max-width:700px) { .tactics-command {grid-template-columns:1fr;padding:10px;gap:9px}.tactics-energy {display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:8px}.tactics-energy strong {font-size:17px}.tactics-energy>small {grid-column:3;grid-row:1;font-size:9px;text-align:right}.tactics-meter {grid-column:1/-1;margin:0}.tactics-abilities {gap:5px}.tactics-abilities button {min-height:78px;gap:6px;padding:7px 5px}.tactic-sigil {display:none}.tactic-copy b {font-size:11px;gap:5px}.tactic-copy small {font-size:9px;line-height:1.5}.tactic-copy em {font-size:9px}.tactics-instruction {font-size:9px}.tactics-instruction button {min-height:38px}.tactics-command kbd {min-width:15px;font-size:9px} }
+@media(prefers-reduced-motion:reduce) { .tactics-command * {transition:none!important} }

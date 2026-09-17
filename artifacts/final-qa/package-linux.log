@@ -1,0 +1,16 @@
+Built 23 scripts and 11 styles into /home/miu/projects/tafang_game/dist. Runtime assets are self-contained.
+  • electron-builder  version=26.15.3 os=6.18.33.2-microsoft-standard-WSL2
+  • loaded configuration  file=/home/miu/projects/tafang_game/desktop/builder.cjs
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=linux arch=x64 electron=44.4.1 appOutDir=release/linux-unpacked
+  • using custom electronDist zip file  zipFile=/tmp/orangewood-electron-linux.zip
+  • searching for node modules  pm=npm searchDir=/home/miu/projects/tafang_game/artifacts/desktop-app
+  • no node modules found in collection, trying next search directory  searchDir=/home/miu/projects/tafang_game/artifacts/desktop-app attempt=0
+  • searching for node modules  pm=npm searchDir=/home/miu/projects/tafang_game
+  • searching for node modules  pm=traversal searchDir=/home/miu/projects/tafang_game/artifacts/desktop-app
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  searchDir=/home/miu/projects/tafang_game/artifacts/desktop-app attempt=0
+  • searching for node modules  pm=traversal searchDir=/home/miu/projects/tafang_game
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules returned while searching directories  searchDirectories=["artifacts/desktop-app",""]
+  • building        target=tar.gz arch=x64 file=release/Orangewood-2.0.0-linux-x64.tar.gz

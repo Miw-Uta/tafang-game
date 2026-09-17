@@ -1,13 +1,23 @@
 {
   "name": "tafang_game",
-  "version": "1.0.0",
-  "description": "原生 HTML5 Canvas 塔防游戏，包含本地动画素材生成工具。",
-  "main": "content-system.js",
+  "version": "2.0.0",
+  "description": "甜橙谷 · 黑潮纪事：五行守卫、合成进化与战术指挥的单机塔防战役。",
+  "main": "desktop/main.cjs",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/*.test.js",
+    "build": "node scripts/build.js",
+    "start": "node scripts/serve.js",
+    "preview": "node scripts/serve.js --dist",
+    "simulate": "node scripts/simulate-campaign.js",
+    "balance": "node scripts/audit-balance.js",
+    "desktop": "npm run build && electron .",
+    "package:windows": "node scripts/package-desktop.js windows",
+    "package:linux": "node scripts/package-desktop.js linux",
+    "test:desktop": "node --test tests/desktop.test.js",
+    "verify:desktop": "node scripts/verify-desktop.js"
   },
   "repository": {
     "type": "git",
@@ -20,8 +30,13 @@
     "url": "https://github.com/Miw-Uta/tafang-game/issues"
   },
   "homepage": "https://github.com/Miw-Uta/tafang-game#readme",
-  "dependencies": {
+  "devDependencies": {
     "@tweenjs/tween.js": "^25.0.0",
-    "sharp": "^0.33.5"
+    "electron": "44.4.1",
+    "electron-builder": "26.15.3",
+    "sharp": "^0.35.4"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

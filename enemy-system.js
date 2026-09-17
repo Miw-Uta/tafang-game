@@ -61,7 +61,8 @@
     }
     apply(key, duration, source = null) {
       if (!STATUS_KEYS.includes(key)) throw new Error(`Unknown enemy status: ${key}`);
-      if (this.owner.shield > 0 && this.owner.shieldStatusImmunity.includes(key)) return 0;
+      if (this.owner.statusImmunity.includes(key) || (this.owner.shield > 0 && this.owner.shieldStatusImmunity.includes(key))) return 0;
+      if (key === 'stun' && this.owner.type === 'boss' && (this.owner.stun > 0 || this.owner.stunRecovery > 0)) return 0;
       const resistance = ['slow', 'silence', 'freeze'].includes(key) ? this.owner.slowResist : 0;
       const adjusted = Math.max(0, duration * (1 - resistance));
       this.owner[key] = Math.max(this.owner[key] || 0, adjusted);
@@ -69,9 +70,15 @@
       return adjusted;
     }
     sourceOf(key) { return this.sources.get(key) || null; }
+    clear(key) { this.owner[key] = 0; this.sources.delete(key); }
     tick(dt) {
+      this.owner.stunRecovery = Math.max(0, this.owner.stunRecovery - dt);
       STATUS_KEYS.forEach(key => {
+        const previous = this.owner[key];
         if (this.owner[key] > 0) this.owner[key] = Math.max(0, this.owner[key] - dt);
+        if (key === 'stun' && previous > 0 && !this.owner.stun && this.owner.type === 'boss') {
+          this.owner.stunRecovery = Math.max(this.owner.stunRecovery, 1.5 - Math.max(0, dt - previous));
+        }
         if (!this.owner[key]) this.sources.delete(key);
       });
     }
@@ -104,11 +111,13 @@
       this.enraged = false;
       this.shield = 0;
       this.maxShield = 0;
+      this.statusImmunity = [];
       this.shieldStatusImmunity = [];
       this.shieldResist = {};
       this.shieldRegen = 0;
       this.shieldRechargeDelay = 0;
       this.shieldBroken = 0;
+      this.stunRecovery = 0;
       this.combatTimer = 0;
       this.aura = null;
       this.auraDamageReduction = 0;
@@ -133,6 +142,7 @@
       if (modifiers.resist) this.resist = { ...this.resist, ...Object.fromEntries(Object.entries(modifiers.resist).map(([key, value]) => [key, Math.max(this.resist[key] || 0, value)])) };
       this.regen += this.max * (modifiers.regenRatio || 0);
       if (modifiers.shieldRatio) { this.maxShield += this.max * modifiers.shieldRatio; this.shield = this.maxShield; }
+      if (modifiers.statusImmunity) this.statusImmunity = [...new Set([...this.statusImmunity, ...modifiers.statusImmunity])];
       if (modifiers.shieldStatusImmunity) this.shieldStatusImmunity = [...new Set([...this.shieldStatusImmunity, ...modifiers.shieldStatusImmunity])];
       if (modifiers.shieldResist) this.shieldResist = { ...this.shieldResist, ...modifiers.shieldResist };
       if (modifiers.shieldRegenRatio) this.shieldRegen += this.max * modifiers.shieldRegenRatio;
@@ -162,10 +172,13 @@
       const modeMultiplier = attackMode ? this.attackModeMultipliers[attackMode] || 1 : 1;
       const dealt = amount * vulnerability * (1 - effectiveArmor) * (1 - resistance) * evasionMultiplier * roleMultiplier * modeMultiplier * (this.shieldBroken > 0 ? 1.15 : 1);
       const shieldModeMultiplier = (attackMode ? this.shieldModeMultipliers[attackMode] || 1 : 1) * (1 + Math.max(0, Math.min(.8, this._synergyShieldBreak || 0)));
-      const shieldDealt = dealt * shieldModeMultiplier * (1 - Math.max(0, Math.min(.8, this.shieldResist[lineage] || 0)));
+      const shieldDamageMultiplier = shieldModeMultiplier * (1 - Math.max(0, Math.min(.8, this.shieldResist[lineage] || 0)));
+      const shieldDealt = dealt * shieldDamageMultiplier;
       const absorbed = Math.min(this.shield, shieldDealt);
       this.shield -= absorbed;
-      this.hp -= dealt - (absorbed * (1 + Math.max(0, Math.min(.5, this.shieldResist[lineage] || 0))));
+      // Shield damage bonuses spend less of the incoming health damage on breaking the shield.
+      const absorbedHealthDamage = absorbed === shieldDealt ? dealt : absorbed / shieldDamageMultiplier;
+      this.hp -= Math.max(0, dealt - absorbedHealthDamage);
       this.combatTimer = 0;
       if (this.maxShield > 0 && this.shield <= 0 && absorbed > 0) this.shieldBroken = 2.5;
       return dealt;
@@ -179,7 +192,7 @@
       if (burnTime > 0) this.receiveDamage(burnTime * 11, 'fire', 'dot');
       if (poisonTime > 0) this.receiveDamage(poisonTime * 8, 'poison', 'dot');
       const rage = this.enraged && this.hp / this.max < .5 ? 1.45 : 1;
-      const controlScale = this.stun > 0 ? 0 : this.freeze > 0 ? .22 : this.slow > 0 ? .48 : 1;
+      let controlScale = this.stun > 0 ? 0 : this.freeze > 0 ? .22 : this.slow > 0 ? .48 : 1;
       this.statuses.tick(dt);
       this.shieldBroken = Math.max(0, this.shieldBroken - dt);
       this.combatTimer += dt;
@@ -192,7 +205,11 @@
         this.phase.active = true;
         if (this.phase.speedMultiplier) this.speed = Math.min(SPEED_LIMITS.max, this.baseSpeed * this.phase.speedMultiplier);
         if (this.phase.shieldRatio) { this.maxShield += this.max * this.phase.shieldRatio; this.shield = this.max * this.phase.shieldRatio; }
-        if (this.phase.statusImmunity) this.shieldStatusImmunity = [...new Set([...this.shieldStatusImmunity, ...this.phase.statusImmunity])];
+        if (this.phase.statusImmunity) {
+          this.statusImmunity = [...new Set([...this.statusImmunity, ...this.phase.statusImmunity])];
+          this.phase.statusImmunity.forEach(key => this.statuses.clear(key));
+          controlScale = this.stun > 0 ? 0 : this.freeze > 0 ? .22 : this.slow > 0 ? .48 : 1;
+        }
         context.onPhaseChange?.(this);
       }
       this.auraDamageReduction = 0;

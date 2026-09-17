@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-09-17T09:36:58.446Z",
+  "method": "Five live battles at 1920x1080. Chapter-access save fixture only; legal authored loadout, real enemies and UI commands. No overlays, fake victory or modified health/damage.",
+  "shots": [
+    {
+      "filename": "groveGate-1920x1080.png",
+      "level": "groveGate",
+      "wave": 1,
+      "running": true,
+      "enemies": 8,
+      "towers": 1,
+      "lives": 12,
+      "paused": false
+    },
+    {
+      "filename": "mirrorMarsh-1920x1080.png",
+      "level": "mirrorMarsh",
+      "wave": 1,
+      "running": true,
+      "enemies": 8,
+      "towers": 1,
+      "lives": 10,
+      "paused": false
+    },
+    {
+      "filename": "emberPass-1920x1080.png",
+      "level": "emberPass",
+      "wave": 1,
+      "running": true,
+      "enemies": 8,
+      "towers": 1,
+      "lives": 8,
+      "paused": false
+    },
+    {
+      "filename": "frostGate-1920x1080.png",
+      "level": "frostGate",
+      "wave": 1,
+      "running": true,
+      "enemies": 4,
+      "towers": 1,
+      "lives": 9,
+      "paused": false
+    },
+    {
+      "filename": "worldTree-1920x1080.png",
+      "level": "worldTree",
+      "wave": 1,
+      "running": true,
+      "enemies": 2,
+      "towers": 1,
+      "lives": 10,
+      "paused": false
+    }
+  ]
+}

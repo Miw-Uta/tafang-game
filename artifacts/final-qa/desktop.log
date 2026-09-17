@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-09-17T09:33:41.076Z",
+  "electron": "44.4.1",
+  "testedHost": "linux-x64",
+  "packagedExecutable": true,
+  "checks": {
+    "isolatedWindow": true,
+    "offlineAssets": true,
+    "campaignBoot": true,
+    "fullSaveExport": true,
+    "fullSaveImport": true,
+    "importBackup": true,
+    "persistenceAfterReload": true,
+    "popupDenied": true
+  },
+  "pageErrors": [],
+  "packages": {
+    "win": {
+      "file": "Orangewood-2.0.0-win-x64.zip",
+      "bytes": 162015857,
+      "sha256": "defef76d8a4d0ea7d93137956e124119d5adb394e50efb0945bb5814dcf274f5",
+      "nativeBuild": false,
+      "runtimeVerified": false
+    }
+  }
+}

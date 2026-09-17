@@ -1,0 +1,113 @@
+[
+  {
+    "width": 1280,
+    "height": 720,
+    "pages": {
+      "hub": {
+        "overflow": false,
+        "docHeight": 773,
+        "buttons": []
+      },
+      "manual": {
+        "overflow": false,
+        "docHeight": 773,
+        "buttons": []
+      },
+      "campaign": {
+        "overflow": false,
+        "docHeight": 1079,
+        "buttons": []
+      },
+      "briefing": {
+        "overflow": false,
+        "docHeight": 1079,
+        "buttons": []
+      },
+      "battle": {
+        "overflow": false,
+        "docHeight": 720,
+        "buttons": []
+      },
+      "battle-manual": {
+        "overflow": false,
+        "docHeight": 720,
+        "buttons": []
+      }
+    },
+    "issues": []
+  },
+  {
+    "width": 1440,
+    "height": 960,
+    "pages": {
+      "hub": {
+        "overflow": false,
+        "docHeight": 960,
+        "buttons": []
+      },
+      "manual": {
+        "overflow": false,
+        "docHeight": 960,
+        "buttons": []
+      },
+      "campaign": {
+        "overflow": false,
+        "docHeight": 1082,
+        "buttons": []
+      },
+      "briefing": {
+        "overflow": false,
+        "docHeight": 1082,
+        "buttons": []
+      },
+      "battle": {
+        "overflow": false,
+        "docHeight": 960,
+        "buttons": []
+      },
+      "battle-manual": {
+        "overflow": false,
+        "docHeight": 960,
+        "buttons": []
+      }
+    },
+    "issues": []
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "pages": {
+      "hub": {
+        "overflow": false,
+        "docHeight": 844,
+        "buttons": []
+      },
+      "manual": {
+        "overflow": false,
+        "docHeight": 844,
+        "buttons": []
+      },
+      "campaign": {
+        "overflow": false,
+        "docHeight": 1952,
+        "buttons": []
+      },
+      "briefing": {
+        "overflow": false,
+        "docHeight": 1952,
+        "buttons": []
+      },
+      "battle": {
+        "overflow": false,
+        "docHeight": 1827,
+        "buttons": []
+      },
+      "battle-manual": {
+        "overflow": false,
+        "docHeight": 1833,
+        "buttons": []
+      }
+    },
+    "issues": []
+  }
+]

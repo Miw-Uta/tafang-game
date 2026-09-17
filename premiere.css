@@ -1,0 +1,217 @@
+/* Chronicles: a single visual language for the journey, field and command desk. */
+body { background:#102d29; }
+.hub-page { width:100%; min-height:100svh; padding:28px 6% 24px; overflow:hidden; color:#eee7c9; display:flex; flex-direction:column; }
+.hub-page::before { display:none; }
+.frontier-art { position:absolute; inset:0; z-index:-2; background:#123b38 url('resources/scenes/frontier.svg') center center/cover no-repeat; }
+.hub-page::after { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,#081f24e6 0%,#0b2626b8 33%,transparent 68%),linear-gradient(0deg,#081d1dc9,transparent 24%); pointer-events:none; }
+.hub-page .page-topbar { border-bottom:1px solid #c8d8b824; padding-bottom:22px; }
+.hub-page .brand { text-decoration:none; color:#f2e8c8; }
+.hub-page .brand h1 { font-size:22px; }
+.hub-page .brand span { color:#9db3a5; font-size:9px; letter-spacing:2px!important; }
+.hub-page .brand-mark { color:#e9c67b; background:transparent; border:1px solid #bda87565; box-shadow:none; border-radius:50%; width:43px;height:43px; }
+.hub-page .brand-mark svg { width:26px;height:26px; }
+.hub-top-actions { margin-left:auto; display:flex; gap:14px; }
+.hub-top-actions button,.hub-footer-actions button { display:flex; align-items:center; justify-content:center; gap:8px; color:#c0cdbc; border:0; background:transparent; font-size:12px; }
+.hub-top-actions button:hover,.hub-footer-actions button:hover { color:#ffe3a1; }
+.hub-page .hub-hero { margin-top:0; padding:clamp(45px,8vh,100px) 0 25px; min-height:0; border:0; background:none; box-shadow:none; overflow:visible; }
+.hub-hero::after { display:none; }
+.hub-page .page-kicker { color:#d7c58c; font-size:11px; font-weight:500; letter-spacing:3px!important; }
+.hub-copy .page-kicker { display:flex; align-items:center; gap:12px; }
+.hub-copy .page-kicker i { display:inline-block; width:20px; height:1px; background:#dac27c; }
+.hub-page .hub-copy h2 { font-family:'Noto Sans SC',sans-serif; font-size:clamp(52px,5.5vw,82px); font-weight:500; letter-spacing:8px!important; margin:18px 0 2px; line-height:1.2; color:#faebc5; text-shadow:0 4px 34px #061f21; }
+.hub-english { color:#c7b885; font-family:Georgia,serif; font-size:13px; letter-spacing:7px!important; margin:12px 0 27px; }
+.hub-page .hub-copy p { font-size:15px; line-height:2; color:#aebcaf; font-weight:400; }
+.hub-save { display:flex; align-items:center; gap:8px; margin-top:24px; font-size:11px; color:#8eab98; }
+.save-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:#a3ce8f; box-shadow:0 0 9px #b1e18c66; }
+.hub-page .mode-grid { display:flex; flex-direction:column; gap:10px; width:380px; max-width:100%; margin:0 0 55px; }
+.hub-page .mode-card { min-height:72px; display:flex; gap:17px; padding:17px 22px; border-radius:3px; box-shadow:none; border:1px solid #acb58d45; background:#1a3c3599; color:#e4e5ca; }
+.hub-page .mode-card:hover { border-color:#dfc588; background:#2b5143d6; transform:translateX(4px); }
+.hub-page .campaign-card { background:linear-gradient(110deg,#d4b477,#eed69a); border-color:#f2d39a; color:#273a2d; }
+.hub-page .campaign-card:hover { background:#f5dda4; }
+.hub-page .mode-card-icon { width:30px;height:30px;background:transparent;box-shadow:none;color:inherit; }
+.hub-page .mode-card-icon svg { width:27px;height:27px;stroke-width:1.5; }
+.hub-page .mode-card b { font-size:18px; font-weight:500; }
+.hub-page .mode-card small { font-size:11px;color:#a6b7a5;margin-top:4px; }
+.hub-page .campaign-card small { color:#65704e; }
+.hub-page .mode-card em { margin:0 0 0 auto; color:inherit; font-size:23px; }
+.hub-resume { display:flex;align-items:center;gap:9px;border:0;background:none;color:#e6ca85;text-align:left;padding:10px 0; }
+.hub-caption { position:absolute;left:60%;bottom:19%;display:flex;align-items:center;gap:16px;color:#d7d4b7;font-size:12px;text-shadow:0 2px 6px #051e1a;pointer-events:none; }
+.caption-line { width:35px;height:1px;background:#c6c39380; }
+.hub-caption small { display:block;font-size:9px;letter-spacing:2px!important;color:#84a899;margin-top:7px; }
+.hub-page .hub-section { margin-top:auto; padding:24px 0 0;border-top:1px solid #c8d8b824;gap:20px; }
+.hub-footer-copy { display:flex; flex-direction:column; gap:9px; }
+.hub-footer-copy>span:last-child { color:#6f9487;font-size:10px; }
+.hub-footer-actions { display:flex; align-items:center; gap:25px; color:#89a699; }
+.workshop-entry { position:relative;font-size:11px; }
+.workshop-entry summary { cursor:pointer;list-style:none; }
+.workshop-entry button { position:absolute; bottom:25px; right:0; width:150px;padding:14px!important;border:1px solid #769681!important;background:#1f4137!important;z-index:10; }
+.build-stamp { font-size:9px;color:#5f887b;letter-spacing:1px!important; }
+/* An atlas connects the chapters into one journey. */
+body[data-page="campaign"] { background:linear-gradient(#122f2ae8,#173a32),url('resources/scenes/frontier.svg') center top/cover fixed; }
+.campaign-page { background:transparent;color:#e7e5ce; }
+.campaign-page::before { display:none; }
+.campaign-page .page-topbar { border-color:#61756665; }
+.campaign-page .page-kicker,.campaign-page .campaign-heading p { color:#91ab9b; }
+.campaign-page h1,.campaign-page .campaign-heading h2 { color:#ede5c7; }
+.campaign-page .campaign-nav button { color:#c1d0be; }
+.campaign-page .campaign-nav button:hover { background:#315244; }
+.campaign-record { border-color:#61756665; }
+.campaign-record span,.campaign-record b,.campaign-heading-right>span { color:#aec5ac; }
+.campaign-heading-right>b { color:#e4c37c; }
+.campaign-heading-right button { background:#d7bd83;color:#283b2c; }
+.chapter-tabs { border-color:#61756665; }
+.chapter-tabs button { color:#9eb69f; }
+.chapter-tabs button.active { color:#f0d693;border-color:#e6c879; }
+.chapter-card { background:#e9ebda;border:1px solid #9baf9070;box-shadow:0 10px 22px #08241c33; }
+.chapter-card.is-locked { opacity:.7; }
+.chapter-card:hover { border-color:#e5c884;box-shadow:0 12px 30px #08241c80; }
+.chapter-card-copy { background:linear-gradient(140deg,#f4efdb,#e4eadb); }
+.chapter-map-preview { aspect-ratio:2.15; }
+.journey-atlas { position:relative;height:205px;margin:0 0 24px;border:1px solid #9cac7540;border-radius:6px;overflow:hidden;background:radial-gradient(ellipse at 30% 80%,#3e66484d,transparent 55%),#142f2a; }
+.journey-atlas::before { content:'';position:absolute;inset:0;background:url('resources/scenes/frontier.svg') center 56%/cover;opacity:.19; }
+.atlas-route { position:absolute;inset:0;width:100%;height:100%; }
+.atlas-node { position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;min-width:88px;background:none;border:0;color:#8ba995;font-size:11px;padding:5px; }
+.atlas-node:hover { transform:translate(-50%,-50%)!important; }
+.atlas-node>i { font-style:normal;display:grid;place-items:center;width:39px;height:39px;border-radius:50%;border:1px solid #7d997667;background:#163e33;color:#9ab390;font-family:Georgia,serif;box-shadow:0 0 0 5px #a4bd7c09; }
+.atlas-node.current>i { border-color:#f0d493;background:#e1c585;color:#314132;box-shadow:0 0 0 5px #efcf7a19,0 0 30px #e7c47725; }
+.atlas-node.complete>i { border-color:#86b295;color:#bbdba8; }
+.atlas-node.current { color:#f2db9f; }
+.atlas-node small { display:flex;gap:4px; }
+.atlas-node small i { width:4px;height:4px;background:#507163;border-radius:50%; }
+.atlas-node small i.done { background:#e0c180; }
+.atlas-caption { position:absolute;bottom:10px;right:15px;color:#678b79;font-size:9px;letter-spacing:2px!important; }
+/* Fit the entire board even when extra command bars consume vertical space. */
+.battle-page .battle-stage-body { display:flex;flex-direction:column; }
+.battle-page .map-operations,.battle-page .battle-coach { flex:none; }
+.battle-page .battle-map-slot { flex:1;min-height:0;display:flex;align-items:center;justify-content:center;container-type:size;overflow:hidden; }
+.battle-page .battle-map-slot .canvas-frame { width:min(100%,calc(100cqh * 16 / 9));max-width:none!important;max-height:100%;aspect-ratio:16/9;flex:none; }
+.battle-page .map-viewport canvas { height:auto!important; }
+.battle-page .stage-wrap { background:radial-gradient(ellipse at 50% 55%,#2b4735,#142e27); }
+.battle-page .topbar { background:#132d27; }
+.battle-page .tower-panel { background:#edf0df; }
+.battle-page .tower-panel>.panel-title { background:#dfe6d3; }
+.battle-page .battle-map-slot .canvas-frame { border-color:#718557;box-shadow:0 0 0 2px #9e9d64,0 12px 35px #031d17a8; }
+.battle-page .battle-badges { top:8px;right:8px; }
+.battle-page .stage-foot { margin-top:10px; }
+.battle-page .battle-coach { display:none!important; }
+.battle-page>.stage-wrap { grid-template-rows:auto minmax(0,1fr) auto auto auto;grid-template-columns:minmax(0,1fr); }
+.battle-page .stage-head { min-width:0;overflow:hidden; }
+.battle-page>.stage-wrap>.dev-tools { grid-row:3; }
+.battle-page>.stage-wrap>.tactics-command { grid-row:4; }
+.battle-page>.stage-wrap>.stage-foot { grid-row:5; }
+@media(min-width:901px) {
+ .battle-page .tower-panel>.tactics-command { position:sticky;top:0;z-index:6;grid-template-columns:1fr;gap:7px;padding:10px 12px; }
+ .battle-page .tower-panel .tactics-energy { display:flex;flex-direction:row;align-items:center;gap:8px; }
+ .battle-page .tower-panel .tactics-meter { flex:1; }
+ .battle-page .tower-panel .tactics-eyebrow { font-size:9px; }
+ .battle-page .tower-panel .tactics-energy strong { font-size:15px; }
+ .battle-page .tower-panel .tactics-energy strong small { font-size:9px; }
+ .battle-page .tower-panel .tactics-abilities { gap:5px; }
+ .battle-page .tower-panel .tactics-abilities button { padding:7px 5px;min-height:55px; }
+ .battle-page .tower-panel .tactic-sigil { display:none; }
+ .battle-page .tower-panel .tactic-copy b { font-size:9px;gap:3px;white-space:normal; }
+ .battle-page .tower-panel .tactic-copy em { font-size:9px; }
+ .battle-page .tower-panel .tactics-command kbd { min-width:12px;min-height:14px;font-size:8px; }
+ .battle-page .tower-panel .tactics-instruction { font-size:9px; }
+ .battle-page { grid-template-rows:58px minmax(0,1fr); }
+ .battle-page .topbar { min-height:58px; }
+ .battle-page .stage-head { min-height:47px;margin-bottom:7px; }
+ .battle-page .encounter-strip { padding-top:4px;padding-bottom:4px; }
+ .battle-page .map-operations { min-height:66px; }
+ .battle-page .tactics-command { padding:8px 12px;grid-template-columns:100px 1fr;gap:5px 12px; }
+ .battle-page .tactics-abilities button { min-height:48px;padding:6px 12px; }
+ .battle-page .tactic-sigil { width:28px;height:32px; }
+ .battle-page .tactic-copy { gap:2px; }
+ .battle-page .tactic-copy small { display:none; }
+ .battle-page .tactics-energy { display:grid;grid-template-columns:auto 1fr;gap:0 7px; }
+ .battle-page .tactics-energy strong { font-size:19px; }
+ .battle-page .tactics-eyebrow,.battle-page .tactics-meter { grid-column:1/-1; }
+ .battle-page .tactics-energy>small { display:none; }
+ .battle-page .tactics-instruction { min-height:12px;font-size:9px; }
+ .battle-page .stage-foot { margin-top:7px; }
+}
+.encounter-strip { display:flex;gap:8px;align-items:center;padding:7px 12px;background:#0b251dc9;border:1px solid #8c9b6740;border-radius:4px;color:#9ab394;font-size:10px;flex:none;min-width:0; }
+.encounter-strip>b { color:#e7d79d;font-weight:500;white-space:nowrap; }
+.encounter-markers { display:flex;gap:5px;align-items:center;flex:1;min-width:0;overflow:hidden; }
+.encounter-dot { border-radius:3px;background:#294637;color:#9fb88f;min-width:24px;padding:4px;text-align:center;font-size:9px; }
+.encounter-dot.past { opacity:.4; }
+.encounter-dot.current { border:1px solid #d9bd73;color:#f3d793;background:#67573455; }
+.encounter-dot.boss { color:#efa587; }
+.route-forecast { margin-left:auto;font-size:9px;white-space:nowrap; }
+.boss-health { position:absolute;top:40px;left:50%;transform:translateX(-50%);width:min(50%,390px);pointer-events:none;background:#182b24df;border:1px solid #a994695c;padding:7px 12px;z-index:4;border-radius:4px; }
+.boss-health>div:first-child { display:flex;justify-content:space-between;color:#ebd69c;font-size:10px; }
+.boss-health small { color:#b3b895;font-size:9px; }
+.boss-health-track { height:4px;background:#334137;margin-top:6px; }
+.boss-health-track i { display:block;height:100%;background:linear-gradient(90deg,#b26043,#e2ba74); }
+.ending-card { margin:20px 0;padding:25px;border:1px solid #b7ba8d;background:linear-gradient(130deg,#e9eddb,#f7edcf);border-radius:6px; }
+.ending-card>small { color:#8b773f;letter-spacing:2px!important; }
+.ending-card h3 { font-size:24px;color:#335a43; }
+.ending-card p { line-height:2; }
+.ending-echo { margin-top:14px;padding-left:14px;border-left:2px solid #b89b5b;font-size:12px;color:#6c7a5e; }
+@media(max-width:1050px) {
+ .hub-page { padding:22px 5%; }
+ .hub-footer-actions { gap:13px; }
+ .hub-page .page-kicker { letter-spacing:1px!important; }
+ .hub-caption { left:58%; }
+}
+@media(max-width:900px) {
+ .battle-page .battle-map-slot { container-type:normal;flex:none;overflow:visible; }
+ .battle-page .battle-map-slot .canvas-frame { width:100%;max-height:none; }
+ .battle-page .battle-stage-body { overflow:visible; }
+ .journey-atlas { height:190px; }
+ .atlas-node { min-width:60px;font-size:10px; }
+ .atlas-node>i { width:32px;height:32px; }
+ .atlas-node span { writing-mode:vertical-rl;letter-spacing:2px!important; }
+ .atlas-node { top:45%!important; }
+ .atlas-route { opacity:.35; }
+}
+@media(max-width:600px) {
+ .campaign-page .campaign-nav button { flex:none; }
+ .campaign-page #codexBtn { font-size:0;gap:0; }
+ .campaign-page #codexBtn svg { width:20px;height:20px; }
+ .campaign-page .page-topbar { gap:7px; }
+ .campaign-page .campaign-record { margin-left:0;padding-left:8px; }
+ .campaign-page .campaign-record span { font-size:8px;white-space:nowrap; }
+ .campaign-page .campaign-record b { font-size:13px;white-space:nowrap; }
+ .hub-page { padding:18px 7%;min-height:100svh; }
+ .frontier-art { background-position:61% center; }
+ .hub-page::after { background:linear-gradient(90deg,#081f24de,#0b26265c),linear-gradient(0deg,#081d1de8,transparent 50%); }
+ .hub-top-actions button span { display:none; }
+ .hub-page .brand h1 { font-size:19px; }
+ .hub-page .brand span { font-size:7px;letter-spacing:1px!important; }
+ .hub-page .page-topbar { padding-bottom:14px; }
+ .hub-page .hub-hero { padding-top:60px; }
+ .hub-page .hub-copy h2 { font-size:49px;letter-spacing:5px!important; }
+ .hub-page .hub-copy p { font-size:13px; }
+ .hub-page .page-kicker { font-size:9px; }
+ .hub-english { font-size:10px;letter-spacing:5px!important; }
+ .hub-page .mode-grid { width:100%;margin-bottom:50px; }
+ .hub-page .hub-section { align-items:flex-start;flex-direction:column;padding-top:17px;gap:20px; }
+ .hub-footer-actions { width:100%;justify-content:space-between; }
+ .hub-caption { display:none; }
+ .hub-footer-copy { gap:7px; }
+ .build-stamp { font-size:7px; }
+ .campaign-page { width:calc(100% - 26px); }
+ .campaign-page .campaign-nav { gap:0; }
+ .campaign-page .campaign-nav button { padding:8px;font-size:10px; }
+ .journey-atlas { height:181px;margin-bottom:12px; }
+ .atlas-node { font-size:9px;min-width:0; }
+ .atlas-node>i { width:26px;height:26px; }
+ .atlas-node small { gap:3px; }
+ .encounter-strip { padding:6px;gap:5px;font-size:9px; }
+ .encounter-dot { min-width:19px;font-size:8px;padding:3px; }
+ .route-forecast { font-size:8px; }
+ .boss-health { top:30px;width:60%;padding:5px 8px; }
+ .boss-health>div:first-child { font-size:8px; }
+}
+@media(min-width:901px) and (max-height:800px) {
+ .hub-page { padding-top:18px;padding-bottom:18px; }
+ .hub-page .page-topbar { padding-bottom:14px; }
+ .hub-page .hub-hero { padding-top:34px;padding-bottom:18px; }
+ .hub-page .hub-copy h2 { font-size:64px; }
+ .hub-page .hub-english { margin-bottom:18px; }
+ .hub-page .hub-save { margin-top:15px; }
+ .hub-page .mode-grid { margin-bottom:25px; }
+ .hub-page .mode-card { min-height:64px;padding:12px 20px; }
+ .hub-page .hub-section { padding-top:17px; }
+}

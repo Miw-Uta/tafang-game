@@ -1,0 +1,1955 @@
+{
+  "sourceHash": "87ff895a75ab772290bab66e50a0268a8ba686271a2fbf59648d624c84ff6f29",
+  "sourceFiles": [
+    "content-system.js",
+    "game-content.js",
+    "campaign-system.js",
+    "story-content.js",
+    "story-system.js",
+    "tactics-system.js",
+    "boss-system.js",
+    "enemy-system.js",
+    "evolution-system.js",
+    "tower-system.js",
+    "synergy-system.js",
+    "game.js",
+    "campaign-ui.js",
+    "scripts/simulate-campaign.js"
+  ],
+  "seed": 42,
+  "difficulty": "normal",
+  "support": "seeds",
+  "noSurge": true,
+  "methodology": "Real combat engine at 50ms ticks. Identical mixed army/growth/evolution heuristic and seed. Commands use finite shared energy and legal targeting. Adaptive chooses live enemy clusters and actively firing towers; wasteful chooses the entry road and least useful tower. No surge isolates command value. This compares deterministic policies, not human skill or win rates.",
+  "results": [
+    {
+      "seed": 42,
+      "support": "seeds",
+      "choice": "first",
+      "level": "frostGate",
+      "result": "WIN",
+      "lives": 9,
+      "completedWaves": 4,
+      "waves": 4,
+      "elapsed": 235.6,
+      "stars": 3,
+      "lossTaken": 0,
+      "firstWaveArmy": "water:6,fire:5,wood:5,metal:5,base:3",
+      "finalArmy": [
+        {
+          "evo": "water",
+          "level": 7,
+          "lineage": "water",
+          "col": 8,
+          "row": 2
+        },
+        {
+          "evo": "fire",
+          "level": 5,
+          "lineage": "fire",
+          "col": 12,
+          "row": 4
+        },
+        {
+          "evo": "wood",
+          "level": 5,
+          "lineage": "wood",
+          "col": 13,
+          "row": 4
+        },
+        {
+          "evo": "metal",
+          "level": 5,
+          "lineage": "metal",
+          "col": 14,
+          "row": 4
+        },
+        {
+          "evo": "earth",
+          "level": 5,
+          "lineage": "earth",
+          "col": 6,
+          "row": 2
+        },
+        {
+          "evo": "thunder",
+          "level": 5,
+          "lineage": "thunder",
+          "col": 8,
+          "row": 6
+        },
+        {
+          "evo": "yin",
+          "level": 5,
+          "lineage": "yin",
+          "col": 12,
+          "row": 1
+        },
+        {
+          "evo": "base",
+          "level": 4,
+          "lineage": "base",
+          "col": 13,
+          "row": 1
+        }
+      ],
+      "selectedLineages": [
+        "fire",
+        "wood",
+        "metal",
+        "earth",
+        "thunder",
+        "yin",
+        "water"
+      ],
+      "evolutionChoices": [
+        {
+          "wave": 1,
+          "offered": [
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yang",
+            "water"
+          ],
+          "chosen": "fire",
+          "lineage": "fire"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "wood",
+            "metal",
+            "earth",
+            "yang",
+            "water",
+            "fire"
+          ],
+          "chosen": "wood",
+          "lineage": "wood"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "metal",
+            "earth",
+            "yang",
+            "water",
+            "fire",
+            "wood"
+          ],
+          "chosen": "metal",
+          "lineage": "metal"
+        },
+        {
+          "wave": 3,
+          "offered": [
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal"
+          ],
+          "chosen": "earth",
+          "lineage": "earth"
+        },
+        {
+          "wave": 3,
+          "offered": [
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "thunder",
+          "lineage": "thunder"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "yin",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "yin",
+          "lineage": "yin"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yin"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yin"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        }
+      ],
+      "strategy": "mixed",
+      "growth": "balanced",
+      "difficulty": "normal",
+      "noSurge": true,
+      "tactics": "none",
+      "priority": "front",
+      "decisions": {
+        "deploy": 13,
+        "evolves": 8,
+        "merge": 10,
+        "reroll": 0,
+        "surge": 0,
+        "moves": 15,
+        "tactics": {
+          "bramble": 0,
+          "rally": 0,
+          "flare": 0
+        }
+      },
+      "checkpoints": [
+        {
+          "wave": 1,
+          "lives": 9,
+          "spirit": 140,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "base:3"
+          ]
+        },
+        {
+          "wave": 2,
+          "lives": 9,
+          "spirit": 67,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "base:4"
+          ]
+        },
+        {
+          "wave": 3,
+          "lives": 9,
+          "spirit": 52,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:4"
+          ]
+        },
+        {
+          "wave": 4,
+          "lives": 9,
+          "spirit": 14,
+          "reserve": {
+            "1": 1,
+            "2": 1
+          },
+          "towers": [
+            "water:7",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "yin:5",
+            "base:4"
+          ]
+        }
+      ],
+      "bossEncounters": {
+        "warnings": 2,
+        "impacts": 2,
+        "hits": 2,
+        "dodges": 0,
+        "interrupts": 0
+      }
+    },
+    {
+      "seed": 42,
+      "support": "seeds",
+      "choice": "first",
+      "level": "frostGate",
+      "result": "WIN",
+      "lives": 9,
+      "completedWaves": 4,
+      "waves": 4,
+      "elapsed": 231.9,
+      "stars": 3,
+      "lossTaken": 0,
+      "firstWaveArmy": "water:6,fire:5,wood:5,metal:5,base:3",
+      "finalArmy": [
+        {
+          "evo": "water",
+          "level": 7,
+          "lineage": "water",
+          "col": 8,
+          "row": 2
+        },
+        {
+          "evo": "fire",
+          "level": 5,
+          "lineage": "fire",
+          "col": 12,
+          "row": 4
+        },
+        {
+          "evo": "wood",
+          "level": 5,
+          "lineage": "wood",
+          "col": 13,
+          "row": 4
+        },
+        {
+          "evo": "metal",
+          "level": 5,
+          "lineage": "metal",
+          "col": 14,
+          "row": 4
+        },
+        {
+          "evo": "earth",
+          "level": 5,
+          "lineage": "earth",
+          "col": 6,
+          "row": 2
+        },
+        {
+          "evo": "thunder",
+          "level": 5,
+          "lineage": "thunder",
+          "col": 8,
+          "row": 6
+        },
+        {
+          "evo": "yin",
+          "level": 5,
+          "lineage": "yin",
+          "col": 12,
+          "row": 1
+        },
+        {
+          "evo": "base",
+          "level": 4,
+          "lineage": "base",
+          "col": 13,
+          "row": 1
+        }
+      ],
+      "selectedLineages": [
+        "fire",
+        "wood",
+        "metal",
+        "earth",
+        "thunder",
+        "yin",
+        "water"
+      ],
+      "evolutionChoices": [
+        {
+          "wave": 1,
+          "offered": [
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yang",
+            "water"
+          ],
+          "chosen": "fire",
+          "lineage": "fire"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "wood",
+            "metal",
+            "earth",
+            "yang",
+            "water",
+            "fire"
+          ],
+          "chosen": "wood",
+          "lineage": "wood"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "metal",
+            "earth",
+            "yang",
+            "water",
+            "fire",
+            "wood"
+          ],
+          "chosen": "metal",
+          "lineage": "metal"
+        },
+        {
+          "wave": 3,
+          "offered": [
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal"
+          ],
+          "chosen": "earth",
+          "lineage": "earth"
+        },
+        {
+          "wave": 3,
+          "offered": [
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "thunder",
+          "lineage": "thunder"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "yin",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "yin",
+          "lineage": "yin"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yin"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yin"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        }
+      ],
+      "strategy": "mixed",
+      "growth": "balanced",
+      "difficulty": "normal",
+      "noSurge": true,
+      "tactics": "adaptive",
+      "priority": "front",
+      "decisions": {
+        "deploy": 13,
+        "evolves": 8,
+        "merge": 10,
+        "reroll": 0,
+        "surge": 0,
+        "moves": 15,
+        "tactics": {
+          "bramble": 10,
+          "rally": 2,
+          "flare": 1
+        }
+      },
+      "checkpoints": [
+        {
+          "wave": 1,
+          "lives": 9,
+          "spirit": 140,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "base:3"
+          ]
+        },
+        {
+          "wave": 2,
+          "lives": 9,
+          "spirit": 67,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "base:4"
+          ]
+        },
+        {
+          "wave": 3,
+          "lives": 9,
+          "spirit": 52,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:4"
+          ]
+        },
+        {
+          "wave": 4,
+          "lives": 9,
+          "spirit": 14,
+          "reserve": {
+            "1": 1,
+            "2": 1
+          },
+          "towers": [
+            "water:7",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "yin:5",
+            "base:4"
+          ]
+        }
+      ],
+      "bossEncounters": {
+        "warnings": 2,
+        "impacts": 2,
+        "hits": 2,
+        "dodges": 0,
+        "interrupts": 0
+      }
+    },
+    {
+      "seed": 42,
+      "support": "seeds",
+      "choice": "first",
+      "level": "frostGate",
+      "result": "WIN",
+      "lives": 9,
+      "completedWaves": 4,
+      "waves": 4,
+      "elapsed": 234.5,
+      "stars": 3,
+      "lossTaken": 0,
+      "firstWaveArmy": "water:6,fire:5,wood:5,metal:5,base:3",
+      "finalArmy": [
+        {
+          "evo": "water",
+          "level": 7,
+          "lineage": "water",
+          "col": 8,
+          "row": 2
+        },
+        {
+          "evo": "fire",
+          "level": 5,
+          "lineage": "fire",
+          "col": 12,
+          "row": 4
+        },
+        {
+          "evo": "wood",
+          "level": 5,
+          "lineage": "wood",
+          "col": 13,
+          "row": 4
+        },
+        {
+          "evo": "metal",
+          "level": 5,
+          "lineage": "metal",
+          "col": 14,
+          "row": 4
+        },
+        {
+          "evo": "earth",
+          "level": 5,
+          "lineage": "earth",
+          "col": 6,
+          "row": 2
+        },
+        {
+          "evo": "thunder",
+          "level": 5,
+          "lineage": "thunder",
+          "col": 8,
+          "row": 6
+        },
+        {
+          "evo": "yin",
+          "level": 5,
+          "lineage": "yin",
+          "col": 12,
+          "row": 1
+        },
+        {
+          "evo": "base",
+          "level": 4,
+          "lineage": "base",
+          "col": 13,
+          "row": 1
+        }
+      ],
+      "selectedLineages": [
+        "fire",
+        "wood",
+        "metal",
+        "earth",
+        "thunder",
+        "yin",
+        "water"
+      ],
+      "evolutionChoices": [
+        {
+          "wave": 1,
+          "offered": [
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yang",
+            "water"
+          ],
+          "chosen": "fire",
+          "lineage": "fire"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "wood",
+            "metal",
+            "earth",
+            "yang",
+            "water",
+            "fire"
+          ],
+          "chosen": "wood",
+          "lineage": "wood"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "metal",
+            "earth",
+            "yang",
+            "water",
+            "fire",
+            "wood"
+          ],
+          "chosen": "metal",
+          "lineage": "metal"
+        },
+        {
+          "wave": 3,
+          "offered": [
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal"
+          ],
+          "chosen": "earth",
+          "lineage": "earth"
+        },
+        {
+          "wave": 3,
+          "offered": [
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "thunder",
+          "lineage": "thunder"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "yin",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "yin",
+          "lineage": "yin"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yin"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "yin"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        }
+      ],
+      "strategy": "mixed",
+      "growth": "balanced",
+      "difficulty": "normal",
+      "noSurge": true,
+      "tactics": "wasteful",
+      "priority": "front",
+      "decisions": {
+        "deploy": 13,
+        "evolves": 8,
+        "merge": 10,
+        "reroll": 0,
+        "surge": 0,
+        "moves": 15,
+        "tactics": {
+          "bramble": 9,
+          "rally": 3,
+          "flare": 1
+        }
+      },
+      "checkpoints": [
+        {
+          "wave": 1,
+          "lives": 9,
+          "spirit": 140,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "base:3"
+          ]
+        },
+        {
+          "wave": 2,
+          "lives": 9,
+          "spirit": 67,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "base:4"
+          ]
+        },
+        {
+          "wave": 3,
+          "lives": 9,
+          "spirit": 52,
+          "reserve": {},
+          "towers": [
+            "water:6",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:4"
+          ]
+        },
+        {
+          "wave": 4,
+          "lives": 9,
+          "spirit": 14,
+          "reserve": {
+            "1": 1,
+            "2": 1
+          },
+          "towers": [
+            "water:7",
+            "fire:5",
+            "wood:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "yin:5",
+            "base:4"
+          ]
+        }
+      ],
+      "bossEncounters": {
+        "warnings": 2,
+        "impacts": 2,
+        "hits": 2,
+        "dodges": 0,
+        "interrupts": 0
+      }
+    },
+    {
+      "seed": 42,
+      "support": "seeds",
+      "choice": "first",
+      "level": "worldTree",
+      "result": "WIN",
+      "lives": 6,
+      "completedWaves": 7,
+      "waves": 7,
+      "elapsed": 625.8,
+      "stars": 2,
+      "lossTaken": 6,
+      "firstWaveArmy": "woodBranch1:10,water:6,fire:5,metal:5,earth:5,thunder:5,base:3",
+      "finalArmy": [
+        {
+          "evo": "woodBranch1",
+          "level": 11,
+          "lineage": "wood",
+          "col": 5,
+          "row": 6
+        },
+        {
+          "evo": "water",
+          "level": 6,
+          "lineage": "water",
+          "col": 1,
+          "row": 4
+        },
+        {
+          "evo": "fire",
+          "level": 5,
+          "lineage": "fire",
+          "col": 10,
+          "row": 5
+        },
+        {
+          "evo": "metal",
+          "level": 5,
+          "lineage": "metal",
+          "col": 14,
+          "row": 5
+        },
+        {
+          "evo": "earth",
+          "level": 5,
+          "lineage": "earth",
+          "col": 12,
+          "row": 5
+        },
+        {
+          "evo": "thunder",
+          "level": 5,
+          "lineage": "thunder",
+          "col": 9,
+          "row": 5
+        },
+        {
+          "evo": "wind",
+          "level": 5,
+          "lineage": "wind",
+          "col": 9,
+          "row": 3
+        },
+        {
+          "evo": "yin",
+          "level": 5,
+          "lineage": "yin",
+          "col": 5,
+          "row": 2
+        }
+      ],
+      "selectedLineages": [
+        "wood",
+        "water",
+        "fire",
+        "metal",
+        "earth",
+        "thunder",
+        "yin",
+        "wind"
+      ],
+      "evolutionChoices": [
+        {
+          "wave": 1,
+          "offered": [
+            "woodBranch1",
+            "woodBranch5",
+            "woodBranch6",
+            "woodBranch3",
+            "woodBranch4",
+            "woodBranch2",
+            "woodBranch7"
+          ],
+          "chosen": "woodBranch1",
+          "lineage": "wood"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "water",
+            "fire",
+            "metal",
+            "earth",
+            "thunder",
+            "wood"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "fire",
+            "metal",
+            "earth",
+            "thunder",
+            "water",
+            "wood"
+          ],
+          "chosen": "fire",
+          "lineage": "fire"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "metal",
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood"
+          ],
+          "chosen": "metal",
+          "lineage": "metal"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal"
+          ],
+          "chosen": "earth",
+          "lineage": "earth"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "thunder",
+          "lineage": "thunder"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "thunder"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 2,
+          "offered": [
+            "yin",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "yin",
+          "lineage": "yin"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "wind",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "wind",
+          "lineage": "wind"
+        }
+      ],
+      "strategy": "mixed",
+      "growth": "balanced",
+      "difficulty": "normal",
+      "noSurge": true,
+      "tactics": "none",
+      "priority": "front",
+      "decisions": {
+        "deploy": 9,
+        "evolves": 9,
+        "merge": 9,
+        "reroll": 0,
+        "surge": 0,
+        "moves": 15,
+        "tactics": {
+          "bramble": 0,
+          "rally": 0,
+          "flare": 0
+        }
+      },
+      "checkpoints": [
+        {
+          "wave": 1,
+          "lives": 10,
+          "spirit": 300,
+          "reserve": {},
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:3"
+          ]
+        },
+        {
+          "wave": 2,
+          "lives": 10,
+          "spirit": 87,
+          "reserve": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:3",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 3,
+          "lives": 9,
+          "spirit": 76,
+          "reserve": {
+            "4": 1,
+            "5": 3
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:4",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 4,
+          "lives": 9,
+          "spirit": 14,
+          "reserve": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 6
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 5,
+          "lives": 9,
+          "spirit": 99,
+          "reserve": {
+            "1": 1,
+            "3": 1,
+            "4": 1,
+            "5": 9
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 6,
+          "lives": 9,
+          "spirit": 10,
+          "reserve": {
+            "4": 1,
+            "5": 13
+          },
+          "towers": [
+            "woodBranch1:11",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 7,
+          "lives": 9,
+          "spirit": 33,
+          "reserve": {
+            "1": 1,
+            "3": 1,
+            "4": 1,
+            "5": 16
+          },
+          "towers": [
+            "woodBranch1:11",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        }
+      ],
+      "bossEncounters": {
+        "warnings": 4,
+        "impacts": 4,
+        "hits": 4,
+        "dodges": 0,
+        "interrupts": 0
+      }
+    },
+    {
+      "seed": 42,
+      "support": "seeds",
+      "choice": "first",
+      "level": "worldTree",
+      "result": "WIN",
+      "lives": 10,
+      "completedWaves": 7,
+      "waves": 7,
+      "elapsed": 634.4,
+      "stars": 3,
+      "lossTaken": 0,
+      "firstWaveArmy": "woodBranch1:10,water:6,fire:5,metal:5,earth:5,thunder:5,base:3",
+      "finalArmy": [
+        {
+          "evo": "woodBranch1",
+          "level": 11,
+          "lineage": "wood",
+          "col": 5,
+          "row": 6
+        },
+        {
+          "evo": "water",
+          "level": 6,
+          "lineage": "water",
+          "col": 1,
+          "row": 4
+        },
+        {
+          "evo": "fire",
+          "level": 5,
+          "lineage": "fire",
+          "col": 10,
+          "row": 5
+        },
+        {
+          "evo": "metal",
+          "level": 5,
+          "lineage": "metal",
+          "col": 14,
+          "row": 5
+        },
+        {
+          "evo": "earth",
+          "level": 5,
+          "lineage": "earth",
+          "col": 12,
+          "row": 5
+        },
+        {
+          "evo": "thunder",
+          "level": 5,
+          "lineage": "thunder",
+          "col": 9,
+          "row": 5
+        },
+        {
+          "evo": "wind",
+          "level": 5,
+          "lineage": "wind",
+          "col": 9,
+          "row": 3
+        },
+        {
+          "evo": "yin",
+          "level": 5,
+          "lineage": "yin",
+          "col": 5,
+          "row": 2
+        }
+      ],
+      "selectedLineages": [
+        "wood",
+        "water",
+        "fire",
+        "metal",
+        "earth",
+        "thunder",
+        "yin",
+        "wind"
+      ],
+      "evolutionChoices": [
+        {
+          "wave": 1,
+          "offered": [
+            "woodBranch1",
+            "woodBranch5",
+            "woodBranch6",
+            "woodBranch3",
+            "woodBranch4",
+            "woodBranch2",
+            "woodBranch7"
+          ],
+          "chosen": "woodBranch1",
+          "lineage": "wood"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "water",
+            "fire",
+            "metal",
+            "earth",
+            "thunder",
+            "wood"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "fire",
+            "metal",
+            "earth",
+            "thunder",
+            "water",
+            "wood"
+          ],
+          "chosen": "fire",
+          "lineage": "fire"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "metal",
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood"
+          ],
+          "chosen": "metal",
+          "lineage": "metal"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal"
+          ],
+          "chosen": "earth",
+          "lineage": "earth"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "thunder",
+          "lineage": "thunder"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "thunder"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 2,
+          "offered": [
+            "yin",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "yin",
+          "lineage": "yin"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "wind",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "wind",
+          "lineage": "wind"
+        }
+      ],
+      "strategy": "mixed",
+      "growth": "balanced",
+      "difficulty": "normal",
+      "noSurge": true,
+      "tactics": "adaptive",
+      "priority": "front",
+      "decisions": {
+        "deploy": 9,
+        "evolves": 9,
+        "merge": 9,
+        "reroll": 0,
+        "surge": 0,
+        "moves": 15,
+        "tactics": {
+          "bramble": 25,
+          "rally": 4,
+          "flare": 3
+        }
+      },
+      "checkpoints": [
+        {
+          "wave": 1,
+          "lives": 10,
+          "spirit": 300,
+          "reserve": {},
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:3"
+          ]
+        },
+        {
+          "wave": 2,
+          "lives": 10,
+          "spirit": 87,
+          "reserve": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:3",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 3,
+          "lives": 10,
+          "spirit": 75,
+          "reserve": {
+            "2": 1,
+            "5": 4
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:4",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 4,
+          "lives": 10,
+          "spirit": 13,
+          "reserve": {
+            "4": 1,
+            "5": 7
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 5,
+          "lives": 10,
+          "spirit": 98,
+          "reserve": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "5": 10
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 6,
+          "lives": 10,
+          "spirit": 9,
+          "reserve": {
+            "1": 1,
+            "5": 14
+          },
+          "towers": [
+            "woodBranch1:11",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 7,
+          "lives": 10,
+          "spirit": 32,
+          "reserve": {
+            "2": 1,
+            "3": 1,
+            "5": 17
+          },
+          "towers": [
+            "woodBranch1:11",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        }
+      ],
+      "bossEncounters": {
+        "warnings": 4,
+        "impacts": 4,
+        "hits": 4,
+        "dodges": 0,
+        "interrupts": 0
+      }
+    },
+    {
+      "seed": 42,
+      "support": "seeds",
+      "choice": "first",
+      "level": "worldTree",
+      "result": "WIN",
+      "lives": 10,
+      "completedWaves": 7,
+      "waves": 7,
+      "elapsed": 626.5,
+      "stars": 2,
+      "lossTaken": 2,
+      "firstWaveArmy": "woodBranch1:10,water:6,fire:5,metal:5,earth:5,thunder:5,base:3",
+      "finalArmy": [
+        {
+          "evo": "woodBranch1",
+          "level": 11,
+          "lineage": "wood",
+          "col": 5,
+          "row": 6
+        },
+        {
+          "evo": "water",
+          "level": 6,
+          "lineage": "water",
+          "col": 1,
+          "row": 4
+        },
+        {
+          "evo": "fire",
+          "level": 5,
+          "lineage": "fire",
+          "col": 10,
+          "row": 5
+        },
+        {
+          "evo": "metal",
+          "level": 5,
+          "lineage": "metal",
+          "col": 14,
+          "row": 5
+        },
+        {
+          "evo": "earth",
+          "level": 5,
+          "lineage": "earth",
+          "col": 12,
+          "row": 5
+        },
+        {
+          "evo": "thunder",
+          "level": 5,
+          "lineage": "thunder",
+          "col": 9,
+          "row": 5
+        },
+        {
+          "evo": "wind",
+          "level": 5,
+          "lineage": "wind",
+          "col": 9,
+          "row": 3
+        },
+        {
+          "evo": "yin",
+          "level": 5,
+          "lineage": "yin",
+          "col": 5,
+          "row": 2
+        }
+      ],
+      "selectedLineages": [
+        "wood",
+        "water",
+        "fire",
+        "metal",
+        "earth",
+        "thunder",
+        "yin",
+        "wind"
+      ],
+      "evolutionChoices": [
+        {
+          "wave": 1,
+          "offered": [
+            "woodBranch1",
+            "woodBranch5",
+            "woodBranch6",
+            "woodBranch3",
+            "woodBranch4",
+            "woodBranch2",
+            "woodBranch7"
+          ],
+          "chosen": "woodBranch1",
+          "lineage": "wood"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "water",
+            "fire",
+            "metal",
+            "earth",
+            "thunder",
+            "wood"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "fire",
+            "metal",
+            "earth",
+            "thunder",
+            "water",
+            "wood"
+          ],
+          "chosen": "fire",
+          "lineage": "fire"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "metal",
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood"
+          ],
+          "chosen": "metal",
+          "lineage": "metal"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "earth",
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal"
+          ],
+          "chosen": "earth",
+          "lineage": "earth"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "thunder",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "thunder",
+          "lineage": "thunder"
+        },
+        {
+          "wave": 1,
+          "offered": [
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth",
+            "thunder"
+          ],
+          "chosen": "water",
+          "lineage": "water"
+        },
+        {
+          "wave": 2,
+          "offered": [
+            "yin",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "yin",
+          "lineage": "yin"
+        },
+        {
+          "wave": 4,
+          "offered": [
+            "wind",
+            "water",
+            "fire",
+            "wood",
+            "metal",
+            "earth"
+          ],
+          "chosen": "wind",
+          "lineage": "wind"
+        }
+      ],
+      "strategy": "mixed",
+      "growth": "balanced",
+      "difficulty": "normal",
+      "noSurge": true,
+      "tactics": "wasteful",
+      "priority": "front",
+      "decisions": {
+        "deploy": 9,
+        "evolves": 9,
+        "merge": 9,
+        "reroll": 0,
+        "surge": 0,
+        "moves": 15,
+        "tactics": {
+          "bramble": 31,
+          "rally": 3,
+          "flare": 0
+        }
+      },
+      "checkpoints": [
+        {
+          "wave": 1,
+          "lives": 10,
+          "spirit": 300,
+          "reserve": {},
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:3"
+          ]
+        },
+        {
+          "wave": 2,
+          "lives": 10,
+          "spirit": 87,
+          "reserve": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:3",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 3,
+          "lives": 10,
+          "spirit": 4,
+          "reserve": {
+            "2": 1,
+            "4": 1,
+            "5": 3
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "base:4",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 4,
+          "lives": 10,
+          "spirit": 42,
+          "reserve": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 6
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 5,
+          "lives": 10,
+          "spirit": 27,
+          "reserve": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 9
+          },
+          "towers": [
+            "woodBranch1:10",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 6,
+          "lives": 10,
+          "spirit": 38,
+          "reserve": {
+            "4": 1,
+            "5": 13
+          },
+          "towers": [
+            "woodBranch1:11",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        },
+        {
+          "wave": 7,
+          "lives": 10,
+          "spirit": 61,
+          "reserve": {
+            "1": 1,
+            "3": 1,
+            "4": 1,
+            "5": 16
+          },
+          "towers": [
+            "woodBranch1:11",
+            "water:6",
+            "fire:5",
+            "metal:5",
+            "earth:5",
+            "thunder:5",
+            "wind:5",
+            "yin:5"
+          ]
+        }
+      ],
+      "bossEncounters": {
+        "warnings": 5,
+        "impacts": 4,
+        "hits": 4,
+        "dodges": 0,
+        "interrupts": 0
+      }
+    }
+  ],
+  "sourceHashAfter": "87ff895a75ab772290bab66e50a0268a8ba686271a2fbf59648d624c84ff6f29",
+  "sourceChangedDuringAudit": false
+}

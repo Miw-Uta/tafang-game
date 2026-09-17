@@ -113,9 +113,45 @@ function testPierceUsesARealAttackLine() {
   assert.deepEqual(targets.map(enemy => enemy.id), ['focus', 'inline']);
 }
 
+function testFocusRetainsAreaAttacksAndPrioritySurvivesStorage() {
+  const { catalog, factory, patterns } = createFixture();
+  const tower = factory.create({ col: 0, row: 0, evo: 'water', targetPriority: 'strong' });
+  const enemies = [
+    { id: 'lead', x: 100, y: 30, dist: 100, hp: 20 },
+    { id: 'boss', x: 110, y: 30, dist: 80, hp: 500 },
+    { id: 'focus', x: 120, y: 30, dist: 10, hp: 80 }
+  ];
+  const context = combatContext(catalog, patterns, enemies, [], []);
+  assert.equal(patterns.get('chain').select(tower, enemies, catalog.get('water'), context)[0].id, 'boss');
+  tower.manualTarget = enemies[2];
+  assert.deepEqual(patterns.get('chain').select(tower, enemies, catalog.get('water'), context).map(e => e.id), ['focus', 'boss']);
+  assert.equal(factory.create(tower.snapshot()).targetPriority, 'strong');
+  const fire = factory.create({ col: 0, row: 0, evo: 'fire' });
+  fire.manualTarget = enemies[2];
+  assert.equal(patterns.get('splash').select(fire, enemies, catalog.get('fire'), context).length, 3);
+  const structure = { x: 120, y: 30, hp: 90, isStructure: true };
+  fire.manualTarget = structure;
+  assert.deepEqual(patterns.get('splash').select(fire, [...enemies, structure], catalog.get('fire'), context), [structure]);
+}
+
+function testCounterPriorityTargetsSupportEnemies() {
+  const { catalog, factory, patterns } = createFixture();
+  const tower = factory.create({ col: 0, row: 0, evo: 'water', targetPriority: 'counter' });
+  const enemies = [
+    { id: 'plain', x: 100, y: 30, dist: 100, hp: 40, max: 40, type: 'normal' },
+    { id: 'shield', x: 110, y: 30, dist: 90, hp: 100, max: 100, maxShield: 40, shield: 40, type: 'elite' },
+    { id: 'aura', x: 120, y: 30, dist: 80, hp: 60, max: 60, aura: { radius: 100 }, type: 'elite' }
+  ];
+  const selected = patterns.get('chain').select(tower, enemies, catalog.get('water'), combatContext(catalog, patterns, enemies, [], []));
+  assert.deepEqual(selected.map(enemy => enemy.id), ['aura', 'shield']);
+  assert.equal(factory.create(tower.snapshot()).targetPriority, 'counter');
+}
+
 testCatalogAndFactory();
 testMergeRulesAndEvolution();
 testAttackStrategies();
 testSplashClustersAroundLeadTarget();
 testPierceUsesARealAttackLine();
-console.log('tower-system: 5 tests passed');
+testFocusRetainsAreaAttacksAndPrioritySurvivesStorage();
+testCounterPriorityTargetsSupportEnemies();
+console.log('tower-system: 7 tests passed');

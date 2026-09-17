@@ -1,0 +1,520 @@
+
+> tafang_game@2.0.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# Subtest: all 85 campaign waves have fixed, advertised compositions and only scheduled bosses
+ok 1 - all 85 campaign waves have fixed, advertised compositions and only scheduled bosses
+  ---
+  duration_ms: 200.857557
+  type: 'test'
+  ...
+# Subtest: campaign enemies and common evolution counters do not depend on cosmetic randomness
+ok 2 - campaign enemies and common evolution counters do not depend on cosmetic randomness
+  ---
+  duration_ms: 158.86681
+  type: 'test'
+  ...
+# Subtest: combat redeployment preserves cooldown and cancels unlaunched attacks
+ok 3 - combat redeployment preserves cooldown and cancels unlaunched attacks
+  ---
+  duration_ms: 126.853078
+  type: 'test'
+  ...
+# Subtest: all five bosses have an identifiable attack and the same readable warning contract
+ok 4 - all five bosses have an identifiable attack and the same readable warning contract
+  ---
+  duration_ms: 2.861378
+  type: 'test'
+  ...
+# Subtest: introductory missions and story difficulty are safe; endless mechanics begin at wave ten
+ok 5 - introductory missions and story difficulty are safe; endless mechanics begin at wave ten
+  ---
+  duration_ms: 0.493389
+  type: 'test'
+  ...
+# Subtest: boss must enter effective tower range and never targets the highest level tower across the map
+ok 6 - boss must enter effective tower range and never targets the highest level tower across the map
+  ---
+  duration_ms: 0.494686
+  type: 'test'
+  ...
+# Subtest: a warning locks a location and a legal one-cell relocation evades its impact
+ok 7 - a warning locks a location and a legal one-cell relocation evades its impact
+  ---
+  duration_ms: 0.367797
+  type: 'test'
+  ...
+# Subtest: remaining in the circle delays only the struck tower for exactly two combat seconds
+ok 8 - remaining in the circle delays only the struck tower for exactly two combat seconds
+  ---
+  duration_ms: 16.523847
+  type: 'test'
+  ...
+# Subtest: pause, modal, prep, victory and defeat freeze warning and exposure clocks
+ok 9 - pause, modal, prep, victory and defeat freeze warning and exposure clocks
+  ---
+  duration_ms: 0.697888
+  type: 'test'
+  ...
+# Subtest: interrupt cancels the pending hit, grants a bounded output window, and cannot be farmed without another cast
+ok 10 - interrupt cancels the pending hit, grants a bounded output window, and cannot be farmed without another cast
+  ---
+  duration_ms: 0.380266
+  type: 'test'
+  ...
+# Subtest: boss death cancels its cast and ordinary enemies cannot invoke a boss attack
+ok 11 - boss death cancels its cast and ordinary enemies cannot invoke a boss attack
+  ---
+  duration_ms: 0.269937
+  type: 'test'
+  ...
+# Subtest: attack interval cannot chain-lock towers and reset removes ephemeral state without changing snapshots
+ok 12 - attack interval cannot chain-lock towers and reset removes ephemeral state without changing snapshots
+  ---
+  duration_ms: 7.798561
+  type: 'test'
+  ...
+# Subtest: real engine impact postpones tower windup and cooldown without taking life or spirit
+ok 13 - real engine impact postpones tower windup and cooldown without taking life or spirit
+  ---
+  duration_ms: 241.519564
+  type: 'test'
+  ...
+# Subtest: real E ability must cover the reading boss, consumes its usual budget and increases real tower damage by 15 percent
+ok 14 - real E ability must cover the reading boss, consumes its usual budget and increases real tower damage by 15 percent
+  ---
+  duration_ms: 126.835321
+  type: 'test'
+  ...
+# Subtest: real engine ignores first three mission bosses and clears all encounter state on a new run
+ok 15 - real engine ignores first three mission bosses and clears all encounter state on a new run
+  ---
+  duration_ms: 101.604391
+  type: 'test'
+  ...
+# Subtest: an E field that misses the reading boss cannot cancel its warning or award vulnerability
+ok 16 - an E field that misses the reading boss cannot cancel its warning or award vulnerability
+  ---
+  duration_ms: 146.175917
+  type: 'test'
+  ...
+# Subtest: the story unlocks in order and supports a continuous twenty-mission campaign
+ok 17 - the story unlocks in order and supports a continuous twenty-mission campaign
+  ---
+  duration_ms: 2.00039
+  type: 'test'
+  ...
+# Subtest: records keep the best medal, lives and score while replays remain available
+ok 18 - records keep the best medal, lives and score while replays remain available
+  ---
+  duration_ms: 2.802322
+  type: 'test'
+  ...
+# Subtest: old records migrate and unavailable or malformed storage never blocks play
+ok 19 - old records migrate and unavailable or malformed storage never blocks play
+  ---
+  duration_ms: 7.736912
+  type: 'test'
+  ...
+# campaign-system: 20 mission contracts, meaningful objectives, three-star results and best records passed
+# Subtest: tests/campaign-system.test.js
+ok 4 - tests/campaign-system.test.js
+  ---
+  duration_ms: 208.403238
+  type: 'test'
+  ...
+# Subtest: tactical command energy and cooldown survive checkpoint reload without refilling
+ok 21 - tactical command energy and cooldown survive checkpoint reload without refilling
+  ---
+  duration_ms: 5.912989
+  type: 'test'
+  ...
+# Subtest: preparation checkpoint restores full tower, economy, objectives and story state across twenty missions
+ok 22 - preparation checkpoint restores full tower, economy, objectives and story state across twenty missions
+  ---
+  duration_ms: 15.796033
+  type: 'test'
+  ...
+# Subtest: checkpoint is an immutable backup and one suspended run replaces its predecessor
+ok 23 - checkpoint is an immutable backup and one suspended run replaces its predecessor
+  ---
+  duration_ms: 0.573293
+  type: 'test'
+  ...
+# Subtest: corrupt, incompatible, oversized and combat snapshots cannot replace the last valid preparation
+ok 24 - corrupt, incompatible, oversized and combat snapshots cannot replace the last valid preparation
+  ---
+  duration_ms: 21.720793
+  type: 'test'
+  ...
+# Subtest: unavailable storage is nonfatal and retains an in-memory preparation for the current page
+ok 25 - unavailable storage is nonfatal and retains an in-memory preparation for the current page
+  ---
+  duration_ms: 2.094161
+  type: 'test'
+  ...
+# Subtest: the fate of the black tide and the final memory create four distinct campaign endings
+ok 26 - the fate of the black tide and the final memory create four distinct campaign endings
+  ---
+  duration_ms: 2.067925
+  type: 'test'
+  ...
+# Subtest: unfinished and malformed records cannot unlock the epilogue, prior choices return as echoes
+ok 27 - unfinished and malformed records cannot unlock the epilogue, prior choices return as echoes
+  ---
+  duration_ms: 0.541771
+  type: 'test'
+  ...
+# Subtest: a returned epilogue cannot mutate subsequent journeys
+ok 28 - a returned epilogue cannot mutate subsequent journeys
+  ---
+  duration_ms: 1.223398
+  type: 'test'
+  ...
+# Subtest: shadow weapons hit real road targets from legal cells on all maps with a bounded four-pulse budget
+ok 29 - shadow weapons hit real road targets from legal cells on all maps with a bounded four-pulse budget
+  ---
+  duration_ms: 214.079208
+  type: 'test'
+  ...
+# Subtest: shadow orbit stops damage and rendering when its selected target leaves actual range
+ok 30 - shadow orbit stops damage and rendering when its selected target leaves actual range
+  ---
+  duration_ms: 99.842168
+  type: 'test'
+  ...
+# Subtest: freeze cannot smuggle stun through boss phase immunity
+ok 31 - freeze cannot smuggle stun through boss phase immunity
+  ---
+  duration_ms: 148.980742
+  type: 'test'
+  ...
+# Subtest: earth knockback only changes distance after immunity accepts the status
+ok 32 - earth knockback only changes distance after immunity accepts the status
+  ---
+  duration_ms: 130.65267
+  type: 'test'
+  ...
+# Subtest: every tower status receives its source and active formation duration multiplier
+ok 33 - every tower status receives its source and active formation duration multiplier
+  ---
+  duration_ms: 117.818983
+  type: 'test'
+  ...
+# content-system: registry, maps, endless and campaign sessions passed
+# Subtest: tests/content-system.test.js
+ok 8 - tests/content-system.test.js
+  ---
+  duration_ms: 243.294009
+  type: 'test'
+  ...
+# Subtest: desktop asset resolver blocks foreign origins, encoded traversal and Windows separators
+ok 35 - desktop asset resolver blocks foreign origins, encoded traversal and Windows separators
+  ---
+  duration_ms: 18.946801
+  type: 'test'
+  ...
+# Subtest: full save round trips all storage slots and rejects corruption, unknown keys and incompatible formats
+ok 36 - full save round trips all storage slots and rejects corruption, unknown keys and incompatible formats
+  ---
+  duration_ms: 12.201655
+  type: 'test'
+  ...
+# Subtest: save file replacement is atomic and invalid input cannot overwrite the prior backup
+ok 37 - save file replacement is atomic and invalid input cannot overwrite the prior backup
+  ---
+  duration_ms: 43.432209
+  type: 'test'
+  ...
+# Subtest: import is applied on the next document before game boot, surviving old-page autosave
+ok 38 - import is applied on the next document before game boot, surviving old-page autosave
+  ---
+  duration_ms: 19.160177
+  type: 'test'
+  ...
+# Subtest: desktop preload collects only game saves and never exposes Node or arbitrary IPC to page
+ok 39 - desktop preload collects only game saves and never exposes Node or arbitrary IPC to page
+  ---
+  duration_ms: 4.25815
+  type: 'test'
+  ...
+# enemy-system: 12 tests passed
+# Subtest: tests/enemy-system.test.js
+ok 10 - tests/enemy-system.test.js
+  ---
+  duration_ms: 350.055695
+  type: 'test'
+  ...
+# evolution-system: 2 tests passed
+# evolution-system: graph and decision tests passed
+# Subtest: tests/evolution-system.test.js
+ok 11 - tests/evolution-system.test.js
+  ---
+  duration_ms: 161.791932
+  type: 'test'
+  ...
+# Subtest: tutorial completion requires true observed facts, not clicks or loaded units
+ok 42 - tutorial completion requires true observed facts, not clicks or loaded units
+  ---
+  duration_ms: 4.713233
+  type: 'test'
+  ...
+# Subtest: tutorial survives reordering, undo and save reload without inventing progress
+ok 43 - tutorial survives reordering, undo and save reload without inventing progress
+  ---
+  duration_ms: 0.529201
+  type: 'test'
+  ...
+# Subtest: audio settings validate saved values and preserve independent mute controls
+ok 44 - audio settings validate saved values and preserve independent mute controls
+  ---
+  duration_ms: 1.456027
+  type: 'test'
+  ...
+# Subtest: soundscape follows combat and bosses and suspends on background or battle pause
+ok 45 - soundscape follows combat and bosses and suspends on background or battle pause
+  ---
+  duration_ms: 0.371788
+  type: 'test'
+  ...
+# Subtest: each biome selects its own composition while the hub keeps the main theme
+ok 46 - each biome selects its own composition while the hub keeps the main theme
+  ---
+  duration_ms: 0.854902
+  type: 'test'
+  ...
+# Subtest: ecological scores differ in chord intervals, rhythms, melody contours and timbre rather than transposition
+ok 47 - ecological scores differ in chord intervals, rhythms, melody contours and timbre rather than transposition
+  ---
+  duration_ms: 0.408099
+  type: 'test'
+  ...
+# Subtest: scores have four eight-bar movements, a written breath, and variation after 32 bars
+ok 48 - scores have four eight-bar movements, a written breath, and variation after 32 bars
+  ---
+  duration_ms: 18.436952
+  type: 'test'
+  ...
+# Subtest: adaptive layers add accents without altering melody or accumulating density
+ok 49 - adaptive layers add accents without altering melody or accumulating density
+  ---
+  duration_ms: 73.365347
+  type: 'test'
+  ...
+# Subtest: pure score output is deterministic, bounded and safe for synthesis across long runs
+ok 50 - pure score output is deterministic, bounded and safe for synthesis across long runs
+  ---
+  duration_ms: 34.488857
+  type: 'test'
+  ...
+# game-smoke: attack variants and evolved-tower standby storage passed
+# Subtest: tests/game-smoke.test.js
+ok 13 - tests/game-smoke.test.js
+  ---
+  duration_ms: 473.852973
+  type: 'test'
+  ...
+# Subtest: cultivation crosses a growth threshold once and preserves surplus
+ok 52 - cultivation crosses a growth threshold once and preserves surplus
+  ---
+  duration_ms: 166.999252
+  type: 'test'
+  ...
+# Subtest: cultivation opens the existing primary and branch evolution decisions
+ok 53 - cultivation opens the existing primary and branch evolution decisions
+  ---
+  duration_ms: 193.832683
+  type: 'test'
+  ...
+# Subtest: cultivation rejects absent, recalled, max-level or unresolved targets without consuming the offer
+ok 54 - cultivation rejects absent, recalled, max-level or unresolved targets without consuming the offer
+  ---
+  duration_ms: 395.136916
+  type: 'test'
+  ...
+# Subtest: cultivation can reach the level cap and cannot be undone into duplicated resources
+ok 55 - cultivation can reach the level cap and cannot be undone into duplicated resources
+  ---
+  duration_ms: 67.989665
+  type: 'test'
+  ...
+# Subtest: paid growth has a reproducible opening and each root keeps its own sequence
+ok 56 - paid growth has a reproducible opening and each root keeps its own sequence
+  ---
+  duration_ms: 261.500003
+  type: 'test'
+  ...
+# Subtest: reroll changes delivery only, never resource grade or paid progression
+ok 57 - reroll changes delivery only, never resource grade or paid progression
+  ---
+  duration_ms: 89.07881
+  type: 'test'
+  ...
+# Subtest: reroll cannot spend resources during an unresolved evolution
+ok 58 - reroll cannot spend resources during an unresolved evolution
+  ---
+  duration_ms: 90.658837
+  type: 'test'
+  ...
+# Subtest: every mission has an independently authored, two-sided tactical dilemma
+ok 59 - every mission has an independently authored, two-sided tactical dilemma
+  ---
+  duration_ms: 15.527293
+  type: 'test'
+  ...
+# Subtest: a decision cannot apply before its wave, twice, or through an unknown key
+ok 60 - a decision cannot apply before its wave, twice, or through an unknown key
+  ---
+  duration_ms: 1.071171
+  type: 'test'
+  ...
+# Subtest: an unchosen decision remains pending after its trigger instead of disappearing
+ok 61 - an unchosen decision remains pending after its trigger instead of disappearing
+  ---
+  duration_ms: 0.275425
+  type: 'test'
+  ...
+# Subtest: checkpoint restore validates the mission, key and own property
+ok 62 - checkpoint restore validates the mission, key and own property
+  ---
+  duration_ms: 0.639031
+  type: 'test'
+  ...
+# Subtest: effect and snapshot copies cannot mutate the selected outcome
+ok 63 - effect and snapshot copies cannot mutate the selected outcome
+  ---
+  duration_ms: 1.338515
+  type: 'test'
+  ...
+# Subtest: missing content is inert and invalid effects are rejected before play
+ok 64 - missing content is inert and invalid effects are rejected before play
+  ---
+  duration_ms: 1.236665
+  type: 'test'
+  ...
+# Subtest: surge lethal rewards spirit, score and objective credit once but never recharges itself
+ok 65 - surge lethal rewards spirit, score and objective credit once but never recharges itself
+  ---
+  duration_ms: 369.73655
+  type: 'test'
+  ...
+# Subtest: surviving a surge does not suppress charge earned by a later genuine tower kill
+ok 66 - surviving a surge does not suppress charge earned by a later genuine tower kill
+  ---
+  duration_ms: 99.077044
+  type: 'test'
+  ...
+# Subtest: normal and story retain their burst percentage while veteran extra health does not amplify burst damage
+ok 67 - normal and story retain their burst percentage while veteran extra health does not amplify burst damage
+  ---
+  duration_ms: 156.343282
+  type: 'test'
+  ...
+# Subtest: surge lethals do not inherit the selected tower burn, freeze, knockback or damage payload
+ok 68 - surge lethals do not inherit the selected tower burn, freeze, knockback or damage payload
+  ---
+  duration_ms: 159.19539
+  type: 'test'
+  ...
+# Subtest: authored synergy upgrades keep every previously earned combat and economy benefit
+ok 69 - authored synergy upgrades keep every previously earned combat and economy benefit
+  ---
+  duration_ms: 12.159458
+  type: 'test'
+  ...
+# Subtest: six verdant forms earn the advertised kill income only for their members and keep control coverage
+ok 70 - six verdant forms earn the advertised kill income only for their members and keep control coverage
+  ---
+  duration_ms: 232.339394
+  type: 'test'
+  ...
+# synergy-system: unique forms, tiers, scopes and amplification passed
+# Subtest: tests/synergy-system.test.js
+ok 18 - tests/synergy-system.test.js
+  ---
+  duration_ms: 73.952107
+  type: 'test'
+  ...
+# Subtest: tactical decisions share finite energy and rejected casts are atomic
+ok 72 - tactical decisions share finite energy and rejected casts are atomic
+  ---
+  duration_ms: 18.25051
+  type: 'test'
+  ...
+# Subtest: simulation time governs energy and cooldown; prep, pause, dialogs and defeat grant nothing
+ok 73 - simulation time governs energy and cooldown; prep, pause, dialogs and defeat grant nothing
+  ---
+  duration_ms: 1.229184
+  type: 'test'
+  ...
+# Subtest: rally rewards spatial formation and following the field never stacks its multiplier
+ok 74 - rally rewards spatial formation and following the field never stacks its multiplier
+  ---
+  duration_ms: 0.683622
+  type: 'test'
+  ...
+# Subtest: root and flare fields affect only living enemies currently inside each field
+ok 75 - root and flare fields affect only living enemies currently inside each field
+  ---
+  duration_ms: 1.022191
+  type: 'test'
+  ...
+# Subtest: snapshot restoration preserves spent commands and cooldown without time-based refills
+ok 76 - snapshot restoration preserves spent commands and cooldown without time-based refills
+  ---
+  duration_ms: 1.99241
+  type: 'test'
+  ...
+# Subtest: corrupt or forged tactical snapshots are rejected without changing live state
+ok 77 - corrupt or forged tactical snapshots are rejected without changing live state
+  ---
+  duration_ms: 1.521666
+  type: 'test'
+  ...
+# Subtest: real engine root field slows movement while immunity and duration resistance remain meaningful
+ok 78 - real engine root field slows movement while immunity and duration resistance remain meaningful
+  ---
+  duration_ms: 154.005341
+  type: 'test'
+  ...
+# Subtest: real tower attack cooldown changes inside rally and returns to normal after moving away
+ok 79 - real tower attack cooldown changes inside rally and returns to normal after moving away
+  ---
+  duration_ms: 96.35373
+  type: 'test'
+  ...
+# Subtest: real flare removes shields, respects boss budget and increases actual tower damage
+ok 80 - real flare removes shields, respects boss budget and increases actual tower damage
+  ---
+  duration_ms: 105.021377
+  type: 'test'
+  ...
+# Subtest: engine rejects commands through story overlays, evolution and pause without spending energy
+ok 81 - engine rejects commands through story overlays, evolution and pause without spending energy
+  ---
+  duration_ms: 109.616579
+  type: 'test'
+  ...
+# Subtest: real campaign save adapter restores spent tactical resources and cooldown on repeated resume
+ok 82 - real campaign save adapter restores spent tactical resources and cooldown on repeated resume
+  ---
+  duration_ms: 123.24796
+  type: 'test'
+  ...
+# tower-system: 7 tests passed
+# Subtest: tests/tower-system.test.js
+ok 20 - tests/tower-system.test.js
+  ---
+  duration_ms: 197.235446
+  type: 'test'
+  ...
+1..83
+# tests 83
+# suites 0
+# pass 83
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1675.51099
